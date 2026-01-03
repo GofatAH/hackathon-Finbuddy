@@ -10,7 +10,8 @@ import { Dashboard } from '@/components/Dashboard';
 import { Subscriptions } from '@/components/Subscriptions';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut } from 'lucide-react';
+import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut, Plus } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -114,6 +115,28 @@ export default function Index() {
     }
   };
 
+  // Start new chat
+  const startNewChat = async () => {
+    if (!user) return;
+    
+    try {
+      // Delete all chat messages for this user
+      await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('user_id', user.id);
+      
+      // Reset messages with new greeting
+      const greeting = getGreeting();
+      setMessages([{ id: 'greeting', role: 'assistant', content: greeting }]);
+      
+      toast({ title: 'New conversation started! 💬' });
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      toast({ title: 'Failed to start new chat', variant: 'destructive' });
+    }
+  };
+
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -164,7 +187,11 @@ export default function Index() {
           message: content,
           personality: profile?.personality || 'chill',
           userName: profile?.name || 'friend',
-          budgetInfo
+          budgetInfo,
+          conversationHistory: messages.filter(m => m.id !== 'greeting').map(m => ({
+            role: m.role,
+            content: m.content
+          }))
         })
       });
 
@@ -358,6 +385,33 @@ export default function Index() {
       <main className="flex-1 overflow-hidden">
         {view === 'chat' && (
           <div className="h-full flex flex-col">
+            {/* Chat Header with New Chat button */}
+            <div className="px-4 py-2 border-b flex items-center justify-between bg-card/50">
+              <span className="text-sm text-muted-foreground">
+                {messages.length > 1 ? `${messages.length - 1} messages` : 'Start chatting'}
+              </span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
+                    <Plus className="w-3.5 h-3.5" />
+                    New Chat
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Start a new conversation?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will clear your current chat history. Your logged expenses and subscriptions will remain saved.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={startNewChat}>Start Fresh</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            
             <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} />
