@@ -382,14 +382,22 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-lg">💚</span>
+      <header className="glass border-b border-border/30 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-premium">
+            <span className="text-xl">💚</span>
           </div>
-          <span className="font-bold text-lg">FinBuddy</span>
+          <div>
+            <span className="font-bold text-lg tracking-tight">FinBuddy</span>
+            <p className="text-[10px] text-muted-foreground -mt-0.5 tracking-wide uppercase">Smart Finance</p>
+          </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleLogout}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleLogout}
+          className="rounded-xl hover:bg-muted/50 transition-colors"
+        >
           <LogOut className="w-5 h-5" />
         </Button>
       </header>
@@ -407,51 +415,66 @@ export default function Index() {
             className="h-full"
           >
             {view === 'chat' && (
-              <div className="h-full flex flex-col">
+              <div className="h-full flex flex-col bg-gradient-to-b from-background to-background/95">
                 {/* Chat Header with New Chat button */}
-                <div className="px-4 py-2 border-b flex items-center justify-between bg-card/50">
-                  <span className="text-sm text-muted-foreground">
-                    {messages.length > 1 ? `${messages.length - 1} messages` : 'Start chatting'}
-                  </span>
+                <div className="px-4 py-3 border-b border-border/30 flex items-center justify-between glass-subtle">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {messages.length > 1 ? `${messages.length - 1} messages` : 'Start chatting'}
+                    </span>
+                  </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="gap-1.5 text-xs rounded-lg hover:bg-muted/50 transition-colors"
+                      >
                         <Plus className="w-3.5 h-3.5" />
                         New Chat
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="glass shadow-premium-lg border-border/30">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Start a new conversation?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-xl">Start a new conversation?</AlertDialogTitle>
                         <AlertDialogDescription>
                           This will clear your current chat history. Your logged expenses and subscriptions will remain saved.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={startNewChat}>Start Fresh</AlertDialogAction>
+                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={startNewChat} className="rounded-xl">Start Fresh</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
                   {messages.map((msg, index) => (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
+                      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ 
+                        delay: Math.min(index * 0.04, 0.4), 
+                        duration: 0.3,
+                        ease: [0.4, 0, 0.2, 1]
+                      }}
                     >
                       <ChatMessage message={msg} />
                     </motion.div>
                   ))}
                   {isStreaming && messages[messages.length - 1]?.content === '' && (
-                    <div className="flex items-center gap-1 p-4">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex items-center gap-1.5 p-4 bg-chat-buddy/50 rounded-2xl rounded-bl-md w-fit shadow-sm border border-border/30"
+                    >
                       <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
                       <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
                       <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
-                    </div>
+                    </motion.div>
                   )}
                   <div ref={messagesEndRef} />
                 </div>
@@ -467,22 +490,30 @@ export default function Index() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bg-card border-t px-2 py-2 safe-area-inset-bottom">
-        <div className="flex justify-around">
+      <nav className="glass border-t border-border/30 px-3 py-2 safe-area-inset-bottom">
+        <div className="flex justify-around max-w-md mx-auto">
           {navItems.map((item) => (
             <motion.button
               key={item.id}
               onClick={() => setView(item.id)}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.02 }}
               className={cn(
-                'flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors',
-                view === item.id 
-                  ? 'text-primary bg-primary/10' 
+                'relative flex flex-col items-center gap-1 px-5 py-2.5 rounded-xl transition-all duration-300',
+                view === item.id
+                  ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              {view === item.id && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute inset-0 bg-primary/10 rounded-xl"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <item.icon className="w-5 h-5 relative z-10" />
+              <span className="text-xs font-medium relative z-10">{item.label}</span>
             </motion.button>
           ))}
         </div>

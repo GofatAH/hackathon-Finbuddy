@@ -39,8 +39,8 @@ function ProgressRing({ percentage, label, spent, budget, icon, color, bgColor, 
       className="flex flex-col items-center animate-fade-in"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="relative w-24 h-24">
-        <svg className="w-full h-full transform -rotate-90">
+      <div className="relative w-24 h-24 group">
+        <svg className="w-full h-full transform -rotate-90 drop-shadow-sm">
           <circle
             cx="48"
             cy="48"
@@ -48,7 +48,7 @@ function ProgressRing({ percentage, label, spent, budget, icon, color, bgColor, 
             strokeWidth="6"
             stroke="currentColor"
             fill="transparent"
-            className="text-muted/30"
+            className="text-muted/20"
           />
           <circle
             cx="48"
@@ -63,11 +63,11 @@ function ProgressRing({ percentage, label, spent, budget, icon, color, bgColor, 
               strokeDashoffset,
               transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
-            className={color}
+            className={cn(color, "drop-shadow-md")}
           />
         </svg>
         <div className={cn(
-          "absolute inset-2 rounded-full flex flex-col items-center justify-center",
+          "absolute inset-2 rounded-full flex flex-col items-center justify-center shadow-inner transition-transform duration-300 group-hover:scale-105",
           bgColor
         )}>
           {icon}
@@ -75,11 +75,11 @@ function ProgressRing({ percentage, label, spent, budget, icon, color, bgColor, 
       </div>
       <div className="mt-3 text-center">
         <div className="flex items-center justify-center gap-1">
-          <span className="font-bold text-lg">{percentage}%</span>
+          <span className="font-bold text-lg tabular-nums">{percentage}%</span>
           <span className="text-sm">{getStatusEmoji()}</span>
         </div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
           ${spent.toFixed(0)} / ${budget.toFixed(0)}
         </p>
       </div>
@@ -101,7 +101,7 @@ function StatCard({ label, value, subtext, icon, trend, className, delay = 0 }: 
   return (
     <Card 
       className={cn(
-        "overflow-hidden animate-fade-in",
+        "overflow-hidden animate-fade-in shadow-premium hover:shadow-premium-lg transition-shadow duration-300",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
@@ -109,9 +109,9 @@ function StatCard({ label, value, subtext, icon, trend, className, delay = 0 }: 
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
             <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold tracking-tight">{value}</p>
+              <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
               {trend && (
                 <span className={cn(
                   "flex items-center text-xs font-medium",
@@ -124,7 +124,7 @@ function StatCard({ label, value, subtext, icon, trend, className, delay = 0 }: 
             </div>
             {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
           </div>
-          <div className="p-2 rounded-xl bg-muted/50">
+          <div className="p-2.5 rounded-xl bg-muted/30 backdrop-blur-sm">
             {icon}
           </div>
         </div>
@@ -221,7 +221,7 @@ export function Dashboard() {
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-2xl font-bold tracking-tight">{monthName}</h2>
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground glass px-3 py-1.5 rounded-full shadow-sm">
             <Calendar className="w-3.5 h-3.5" />
             <span>{daysLeft}d left</span>
           </div>
@@ -231,14 +231,15 @@ export function Dashboard() {
 
       {/* Main Balance Card */}
       <Card 
-        className="overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80 text-primary-foreground animate-fade-in"
+        className="overflow-hidden bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground animate-fade-in shadow-premium-lg border-0 relative"
         style={{ animationDelay: '50ms' }}
       >
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between mb-4">
+        <div className="absolute inset-0 gradient-shine pointer-events-none" />
+        <CardContent className="p-6 relative">
+          <div className="flex items-start justify-between mb-5">
             <div>
-              <p className="text-sm opacity-80 mb-1">Remaining Budget</p>
-              <p className="text-4xl font-bold tracking-tight">
+              <p className="text-sm opacity-80 mb-1 font-medium">Remaining Budget</p>
+              <p className="text-5xl font-bold tracking-tight">
                 ${remaining >= 0 ? remaining.toFixed(0) : '0'}
               </p>
               {remaining < 0 && (
@@ -247,18 +248,18 @@ export function Dashboard() {
                 </p>
               )}
             </div>
-            <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-sm">
-              <Wallet className="w-6 h-6" />
+            <div className="p-3.5 rounded-2xl bg-white/15 backdrop-blur-sm">
+              <Wallet className="w-7 h-7" />
             </div>
           </div>
           
           {/* Progress bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs opacity-80">
+          <div className="space-y-2.5">
+            <div className="flex justify-between text-xs opacity-80 font-medium">
               <span>${totalSpent.toFixed(0)} spent</span>
               <span>${totalBudget.toFixed(0)} total</span>
             </div>
-            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+            <div className="h-2.5 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
               <div 
                 className={cn(
                   "h-full rounded-full transition-all duration-1000 ease-out",
@@ -270,12 +271,12 @@ export function Dashboard() {
           </div>
 
           {/* Daily budget */}
-          <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between">
+          <div className="mt-5 pt-4 border-t border-white/20 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 opacity-70" />
-              <span className="text-sm opacity-80">Daily budget</span>
+              <span className="text-sm opacity-80 font-medium">Daily budget</span>
             </div>
-            <span className="font-semibold">${dailyBudget.toFixed(0)}/day</span>
+            <span className="font-bold text-lg">${dailyBudget.toFixed(0)}/day</span>
           </div>
         </CardContent>
       </Card>
@@ -283,7 +284,7 @@ export function Dashboard() {
       {/* Insight Card */}
       <Card 
         className={cn(
-          "border-l-4 animate-fade-in",
+          "border-l-4 animate-fade-in shadow-premium",
           insight.type === 'positive' && "border-l-budget-safe bg-budget-safe/5",
           insight.type === 'warning' && "border-l-budget-warning bg-budget-warning/5",
           insight.type === 'neutral' && "border-l-primary bg-primary/5"
@@ -294,7 +295,7 @@ export function Dashboard() {
           <div className="flex items-center gap-3">
             <div className="text-2xl">{insight.emoji}</div>
             <div className="flex-1">
-              <p className="font-medium">{insight.text}</p>
+              <p className="font-semibold">{insight.text}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Day {today.getDate()} of {daysInMonth} · {overallPercentage}% spent
               </p>
@@ -358,42 +359,42 @@ export function Dashboard() {
 
       {/* Recent Transactions */}
       <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Recent Activity</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-lg">Recent Activity</h3>
           {expenses.length > 5 && (
             <button 
               onClick={() => setShowAllExpenses(!showAllExpenses)}
-              className="text-xs text-primary flex items-center gap-1 hover:underline"
+              className="text-xs font-medium text-primary flex items-center gap-1 hover:underline transition-colors"
             >
-              {showAllExpenses ? 'Show less' : 'View all'} <ArrowRight className={cn("w-3 h-3 transition-transform", showAllExpenses && "rotate-90")} />
+              {showAllExpenses ? 'Show less' : 'View all'} <ArrowRight className={cn("w-3 h-3 transition-transform duration-200", showAllExpenses && "rotate-90")} />
             </button>
           )}
         </div>
         
         {expenses.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                <Wallet className="w-6 h-6 text-muted-foreground" />
+          <Card className="border-dashed border-2 shadow-none">
+            <CardContent className="py-10 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                <Wallet className="w-7 h-7 text-muted-foreground" />
               </div>
-              <p className="font-medium mb-1">No expenses yet</p>
+              <p className="font-semibold mb-1">No expenses yet</p>
               <p className="text-sm text-muted-foreground">
                 Chat with FinBuddy to log your first expense
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {displayedExpenses.map((expense, index) => {
               const CategoryIcon = expense.category === 'needs' ? Home : expense.category === 'wants' ? ShoppingBag : PiggyBank;
               
               return (
                 <Card 
                   key={expense.id} 
-                  className="animate-fade-in group"
+                  className="animate-fade-in group shadow-sm hover:shadow-premium transition-shadow duration-200"
                   style={{ animationDelay: `${450 + index * 50}ms` }}
                 >
-                  <CardContent className="py-3 px-4">
+                  <CardContent className="py-3.5 px-4">
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
