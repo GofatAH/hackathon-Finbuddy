@@ -73,6 +73,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           id: string
           monthly_income: number | null
@@ -86,6 +87,7 @@ export type Database = {
           wants_percentage: number | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           monthly_income?: number | null
@@ -99,6 +101,7 @@ export type Database = {
           wants_percentage?: number | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           monthly_income?: number | null

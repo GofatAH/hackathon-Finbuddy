@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { personalities, PersonalityType } from '@/lib/personalities';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Bell, BellOff, Loader2, Moon, Sun, LogOut, Shield, User, Palette, Sparkles, Pencil, X, Save } from 'lucide-react';
+import { Check, Bell, BellOff, Loader2, Moon, Sun, LogOut, Shield, User, Palette, Sparkles, Pencil, X, Save, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
@@ -29,10 +30,12 @@ const itemVariants = {
 };
 
 export function Settings() {
-  const { profile, updateProfile } = useProfile();
-  const { signOut } = useAuth();
+  const { profile, updateProfile, refetch } = useProfile();
+  const { signOut, user } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { 
     isSupported, 
     isSubscribed, 
@@ -112,6 +115,51 @@ export function Settings() {
     toast({ title: 'Signed out successfully' });
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Please select an image file', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Image must be less than 2MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with avatar URL
+      const { error: updateError } = await updateProfile({ avatar_url: publicUrl });
+      if (updateError) throw updateError;
+
+      await refetch();
+      toast({ title: 'Avatar updated! ✓' });
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast({ title: 'Failed to upload avatar', variant: 'destructive' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   return (
     <motion.div 
       className="px-3 py-2 space-y-3 overflow-y-auto h-full pb-20"
@@ -152,16 +200,51 @@ export function Settings() {
               </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 px-3 pb-3">
-            <div className="flex justify-between items-center py-1.5 border-b border-border/50">
-              <span className="text-xs text-muted-foreground">Name</span>
-              <span className="font-semibold text-sm">{profile?.name || 'Not set'}</span>
+          <CardContent className="space-y-3 px-3 pb-3">
+            {/* Avatar */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-6 h-6 text-primary/60" />
+                  )}
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="w-3 h-3 text-primary-foreground animate-spin" />
+                  ) : (
+                    <Camera className="w-3 h-3 text-primary-foreground" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm">{profile?.name || 'Not set'}</p>
+                <p className="text-[10px] text-muted-foreground">Tap camera to change photo</p>
+              </div>
             </div>
-            <div className="flex justify-between items-center py-1.5 border-b border-border/50">
+            
+            <div className="flex justify-between items-center py-1.5 border-t border-border/50">
               <span className="text-xs text-muted-foreground">Monthly Income</span>
               <span className="font-semibold text-sm text-primary">${profile?.monthly_income?.toFixed(0) || 0}</span>
             </div>
-            <div className="flex justify-between items-center py-1.5">
+            <div className="flex justify-between items-center py-1.5 border-t border-border/50">
               <span className="text-xs text-muted-foreground">Budget Split</span>
               <div className="flex gap-1">
                 <span className="px-1.5 py-0.5 rounded bg-needs/10 text-needs text-xs font-medium">{profile?.needs_percentage}%</span>

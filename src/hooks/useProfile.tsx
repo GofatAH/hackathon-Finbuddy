@@ -13,6 +13,7 @@ export interface Profile {
   savings_percentage: number;
   personality: PersonalityType;
   onboarding_completed: boolean;
+  avatar_url: string | null;
 }
 
 export function useProfile() {
@@ -44,7 +45,8 @@ export function useProfile() {
       setProfile({
         ...data,
         monthly_income: Number(data.monthly_income),
-        personality: data.personality as PersonalityType
+        personality: data.personality as PersonalityType,
+        avatar_url: data.avatar_url
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
