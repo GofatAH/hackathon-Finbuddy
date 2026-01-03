@@ -478,27 +478,40 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="glass border-b border-border/30 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="glass border-b border-border/30 px-4 py-3 flex items-center justify-between sticky top-0 z-50"
+      >
         <div className="flex items-center gap-3">
-          <img 
+          <motion.img 
             src="/logo.png" 
             alt="FinBuddy" 
             className="w-10 h-10 rounded-xl shadow-premium"
+            whileHover={{ scale: 1.05, rotate: 3 }}
+            whileTap={{ scale: 0.95 }}
           />
           <div>
             <span className="font-bold text-lg tracking-tight">FinBuddy</span>
-            <p className="text-[10px] text-muted-foreground -mt-0.5 tracking-wide uppercase">Smart Finance</p>
+            <p className="text-[10px] text-muted-foreground -mt-0.5 tracking-wide uppercase font-medium">Smart Finance</p>
           </div>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={handleLogout}
-          className="rounded-xl hover:bg-muted/50 transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-        </Button>
-      </header>
+        
+        {/* Page indicator dots */}
+        <div className="flex items-center gap-1.5">
+          {VIEWS.map((v) => (
+            <motion.div
+              key={v}
+              className={cn(
+                "w-2 h-2 rounded-full transition-all duration-300",
+                view === v ? "bg-primary w-6" : "bg-muted-foreground/30"
+              )}
+              layoutId={view === v ? "page-dot" : undefined}
+            />
+          ))}
+        </div>
+      </motion.header>
 
       {/* Main Content */}
       <main 
@@ -669,16 +682,23 @@ export default function Index() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="glass border-t border-border/30 px-3 py-2 safe-area-inset-bottom">
+      <motion.nav 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+        className="glass border-t border-border/30 px-2 py-2 safe-area-inset-bottom"
+      >
         <div className="flex justify-around max-w-md mx-auto">
-          {navItems.map((item) => (
+          {navItems.map((item, index) => (
             <motion.button
               key={item.id}
               onClick={() => setView(item.id)}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + index * 0.05 }}
               whileTap={{ scale: 0.92 }}
-              whileHover={{ scale: 1.02 }}
               className={cn(
-                'relative flex flex-col items-center gap-1 px-5 py-2.5 rounded-xl transition-all duration-300',
+                'relative flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all duration-300',
                 view === item.id
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -688,15 +708,27 @@ export default function Index() {
                 <motion.div
                   layoutId="nav-indicator"
                   className="absolute inset-0 bg-primary/10 rounded-xl"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                 />
               )}
-              <item.icon className="w-5 h-5 relative z-10" />
-              <span className="text-xs font-medium relative z-10">{item.label}</span>
+              <motion.div
+                animate={view === item.id ? { scale: [1, 1.15, 1] } : {}}
+                transition={{ duration: 0.3 }}
+              >
+                <item.icon className="w-5 h-5 relative z-10" />
+              </motion.div>
+              <span className="text-[11px] font-medium relative z-10">{item.label}</span>
+              {view === item.id && (
+                <motion.div
+                  layoutId="nav-dot"
+                  className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary"
+                  transition={{ type: "spring", bounce: 0.3 }}
+                />
+              )}
             </motion.button>
           ))}
         </div>
-      </nav>
+      </motion.nav>
     </div>
   );
 }
