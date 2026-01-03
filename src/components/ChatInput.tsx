@@ -11,6 +11,7 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [message, setMessage] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,32 +24,42 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   return (
     <form 
       onSubmit={handleSubmit}
-      className="border-t bg-card p-4"
+      className={cn(
+        "border-t glass p-4 transition-all duration-300",
+        isFocused && "shadow-premium"
+      )}
     >
       <div className="flex items-center gap-2">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="shrink-0 text-muted-foreground"
+          className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
           disabled={disabled}
         >
           <Camera className="w-5 h-5" />
         </Button>
-        <Input
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="coffee $5..."
-          className={cn(
-            'flex-1 bg-background border-0 focus-visible:ring-1',
-            disabled && 'opacity-50'
-          )}
-          disabled={disabled}
-        />
+        <div className="flex-1 relative">
+          <Input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder="Type a message..."
+            className={cn(
+              'w-full bg-background/80 border border-border/50 rounded-xl px-4 py-2.5 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all duration-200',
+              disabled && 'opacity-50'
+            )}
+            disabled={disabled}
+          />
+        </div>
         <Button
           type="submit"
           size="icon"
-          className="shrink-0"
+          className={cn(
+            "shrink-0 rounded-xl shadow-premium transition-all duration-200",
+            message.trim() ? "bg-primary hover:bg-primary/90 scale-100" : "bg-muted text-muted-foreground scale-95"
+          )}
           disabled={disabled || !message.trim()}
         >
           <Send className="w-4 h-4" />
