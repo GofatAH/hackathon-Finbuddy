@@ -445,36 +445,36 @@ export default function Index() {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="glass border-b border-border/30 px-4 py-3 flex items-center justify-between sticky top-0 z-50"
+        className="flex-shrink-0 glass border-b border-border/30 px-3 py-2 flex items-center justify-between z-50"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <motion.img 
             src="/logo.png" 
             alt="FinBuddy" 
-            className="w-10 h-10 rounded-xl shadow-premium"
+            className="w-8 h-8 rounded-lg shadow-premium"
             whileHover={{ scale: 1.05, rotate: 3 }}
             whileTap={{ scale: 0.95 }}
           />
           <div>
-            <span className="font-bold text-lg tracking-tight">FinBuddy</span>
-            <p className="text-[10px] text-muted-foreground -mt-0.5 tracking-wide uppercase font-medium">Smart Finance</p>
+            <span className="font-bold text-base tracking-tight">FinBuddy</span>
+            <p className="text-[9px] text-muted-foreground -mt-0.5 tracking-wide uppercase font-medium">Smart Finance</p>
           </div>
         </div>
         
         {/* Page indicator dots */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {VIEWS.map((v) => (
             <motion.div
               key={v}
               className={cn(
-                "w-2 h-2 rounded-full transition-all duration-300",
-                view === v ? "bg-primary w-6" : "bg-muted-foreground/30"
+                "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                view === v ? "bg-primary w-4" : "bg-muted-foreground/30"
               )}
               layoutId={view === v ? "page-dot" : undefined}
             />
@@ -483,7 +483,7 @@ export default function Index() {
       </motion.header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 min-h-0 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={view}
@@ -497,10 +497,10 @@ export default function Index() {
             {view === 'chat' && (
               <div className="h-full flex flex-col bg-gradient-to-b from-background to-background/95">
                 {/* Chat Header with New Chat button */}
-                <div className="px-4 py-3 border-b border-border/30 flex items-center justify-between glass-subtle">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-sm font-medium text-muted-foreground">
+                <div className="flex-shrink-0 px-3 py-2 border-b border-border/30 flex items-center justify-between glass-subtle">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <span className="text-xs font-medium text-muted-foreground">
                       {messages.length > 1 ? `${messages.length - 1} messages` : 'Start chatting'}
                     </span>
                   </div>
@@ -509,27 +509,28 @@ export default function Index() {
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="gap-1.5 text-xs rounded-lg hover:bg-muted/50 transition-colors"
+                        className="gap-1 text-[10px] h-7 px-2 rounded-lg hover:bg-muted/50 transition-colors"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-3 h-3" />
                         New Chat
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="glass shadow-premium-lg border-border/30">
+                    <AlertDialogContent className="glass shadow-premium-lg border-border/30 mx-4">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-xl">Start a new conversation?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-lg">Start a new conversation?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm">
                           This will clear your current chat history. Your logged expenses and subscriptions will remain saved.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={startNewChat} className="rounded-xl">Start Fresh</AlertDialogAction>
+                        <AlertDialogCancel className="rounded-xl text-sm">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={startNewChat} className="rounded-xl text-sm">Start Fresh</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
                 
+                {/* Chat messages - scrollable area */}
                 <div 
                   ref={(node) => {
                     chatContainerRef.current = node;
@@ -538,21 +539,21 @@ export default function Index() {
                     }
                   }}
                   onScroll={handleChatScroll}
-                  className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin bg-gradient-to-b from-background/50 to-background relative"
+                  className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3 scrollbar-thin bg-gradient-to-b from-background/50 to-background relative"
                 >
                   {messages.length === 0 && (
                     <motion.div 
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex flex-col items-center justify-center h-full text-center px-6"
+                      className="flex flex-col items-center justify-center h-full text-center px-4"
                     >
                       <img 
                         src="/logo.png" 
                         alt="FinBuddy" 
-                        className="w-16 h-16 rounded-2xl mb-4 shadow-premium-lg"
+                        className="w-12 h-12 rounded-xl mb-3 shadow-premium-lg"
                       />
-                      <h3 className="text-lg font-semibold mb-2">Welcome to FinBuddy</h3>
-                      <p className="text-sm text-muted-foreground max-w-xs">
+                      <h3 className="text-base font-semibold mb-1">Welcome to FinBuddy</h3>
+                      <p className="text-xs text-muted-foreground max-w-xs">
                         Tell me about your expenses naturally, like "coffee $5 at Starbucks" and I'll help you track them!
                       </p>
                     </motion.div>
@@ -561,11 +562,11 @@ export default function Index() {
                   {messages.map((msg, index) => (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                      initial={{ opacity: 0, y: 12, scale: 0.97 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{ 
-                        delay: Math.min(index * 0.05, 0.5), 
-                        duration: 0.35,
+                        delay: Math.min(index * 0.03, 0.3), 
+                        duration: 0.25,
                         ease: [0.22, 1, 0.36, 1]
                       }}
                     >
@@ -582,28 +583,28 @@ export default function Index() {
                       <img 
                         src="/logo.png" 
                         alt="FinBuddy" 
-                        className="w-8 h-8 rounded-full shadow-premium"
+                        className="w-6 h-6 rounded-full shadow-premium"
                       />
-                      <div className="flex items-center gap-1.5 px-4 py-3 bg-card rounded-2xl rounded-bl-md shadow-premium border border-border/40">
+                      <div className="flex items-center gap-1 px-3 py-2 bg-card rounded-xl rounded-bl-sm shadow-premium border border-border/40">
                         <motion.div 
                           animate={{ scale: [1, 1.2, 1] }}
                           transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
-                          className="w-2 h-2 bg-primary rounded-full"
+                          className="w-1.5 h-1.5 bg-primary rounded-full"
                         />
                         <motion.div 
                           animate={{ scale: [1, 1.2, 1] }}
                           transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }}
-                          className="w-2 h-2 bg-primary rounded-full"
+                          className="w-1.5 h-1.5 bg-primary rounded-full"
                         />
                         <motion.div 
                           animate={{ scale: [1, 1.2, 1] }}
                           transition={{ repeat: Infinity, duration: 0.6, delay: 0.3 }}
-                          className="w-2 h-2 bg-primary rounded-full"
+                          className="w-1.5 h-1.5 bg-primary rounded-full"
                         />
                       </div>
                     </motion.div>
                   )}
-                  <div ref={messagesEndRef} className="h-2" />
+                  <div ref={messagesEndRef} className="h-1" />
                 </div>
                 
                 {/* Jump to Latest Button */}
@@ -615,26 +616,20 @@ export default function Index() {
                       exit={{ opacity: 0, y: 20, scale: 0.9 }}
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                       onClick={jumpToLatest}
-                      className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full shadow-premium-lg hover:bg-primary/90 transition-colors z-10"
+                      className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-full shadow-premium-lg hover:bg-primary/90 transition-colors z-10"
                     >
-                      <ArrowDown className="w-4 h-4" />
-                      <span className="text-sm font-medium">
-                        {unreadCount > 0 ? `${unreadCount} new message${unreadCount > 1 ? 's' : ''}` : 'Jump to latest'}
+                      <ArrowDown className="w-3 h-3" />
+                      <span className="text-xs font-medium">
+                        {unreadCount > 0 ? `${unreadCount} new` : 'Latest'}
                       </span>
-                      {unreadCount > 0 && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center"
-                        >
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </motion.span>
-                      )}
                     </motion.button>
                   )}
                 </AnimatePresence>
                 
-                <ChatInput onSend={sendMessage} disabled={isStreaming} />
+                {/* Chat input - fixed at bottom */}
+                <div className="flex-shrink-0">
+                  <ChatInput onSend={sendMessage} disabled={isStreaming} />
+                </div>
               </div>
             )}
 
@@ -645,12 +640,12 @@ export default function Index() {
         </AnimatePresence>
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Fixed */}
       <motion.nav 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-        className="glass border-t border-border/30 px-2 py-2 safe-area-inset-bottom"
+        className="flex-shrink-0 glass border-t border-border/30 px-2 py-1.5 safe-area-inset-bottom"
       >
         <div className="flex justify-around max-w-md mx-auto">
           {navItems.map((item, index) => (
@@ -662,7 +657,7 @@ export default function Index() {
               transition={{ delay: 0.3 + index * 0.05 }}
               whileTap={{ scale: 0.92 }}
               className={cn(
-                'relative flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all duration-300',
+                'relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all duration-300',
                 view === item.id
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -671,24 +666,17 @@ export default function Index() {
               {view === item.id && (
                 <motion.div
                   layoutId="nav-indicator"
-                  className="absolute inset-0 bg-primary/10 rounded-xl"
+                  className="absolute inset-0 bg-primary/10 rounded-lg"
                   transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                 />
               )}
               <motion.div
-                animate={view === item.id ? { scale: [1, 1.15, 1] } : {}}
+                animate={view === item.id ? { scale: [1, 1.1, 1] } : {}}
                 transition={{ duration: 0.3 }}
               >
-                <item.icon className="w-5 h-5 relative z-10" />
+                <item.icon className="w-4 h-4 relative z-10" />
               </motion.div>
-              <span className="text-[11px] font-medium relative z-10">{item.label}</span>
-              {view === item.id && (
-                <motion.div
-                  layoutId="nav-dot"
-                  className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary"
-                  transition={{ type: "spring", bounce: 0.3 }}
-                />
-              )}
+              <span className="text-[10px] font-medium relative z-10">{item.label}</span>
             </motion.button>
           ))}
         </div>
