@@ -29,6 +29,7 @@ const pageTransition = {
 };
 
 type View = 'chat' | 'dashboard' | 'subscriptions' | 'settings';
+const VIEWS: View[] = ['chat', 'dashboard', 'subscriptions', 'settings'];
 
 interface Message {
   id: string;
@@ -163,6 +164,38 @@ export default function Index() {
       }, 100);
     }
   }, [view]);
+
+  // Swipe gesture handling
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const swipeDistance = touchStartX.current - touchEndX.current;
+    const currentIndex = VIEWS.indexOf(view);
+
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      if (swipeDistance > 0 && currentIndex < VIEWS.length - 1) {
+        // Swipe left - go to next page
+        setView(VIEWS[currentIndex + 1]);
+      } else if (swipeDistance < 0 && currentIndex > 0) {
+        // Swipe right - go to previous page
+        setView(VIEWS[currentIndex - 1]);
+      }
+    }
+    
+    // Reset
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || isStreaming) return;
@@ -425,7 +458,12 @@ export default function Index() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main 
+        className="flex-1 overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={view}
