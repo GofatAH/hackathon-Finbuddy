@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.scan-receipt]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.check-subscription-reminders]
+verify_jwt = false
