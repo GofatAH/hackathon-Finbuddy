@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Sparkles, Mic, Coffee, ShoppingCart, Utensils, Car, Film, Dumbbell, Home, Zap } from 'lucide-react';
+import { Send, Sparkles, Camera, Coffee, ShoppingCart, Utensils, Car, Film, Dumbbell, Home, Zap, X, Loader2, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
+  onReceiptScanned?: (data: { amount: number; merchant: string; category: string }) => void;
 }
 
 const placeholders = [
@@ -28,12 +31,17 @@ const quickReplies = [
   { icon: Zap, label: 'Utilities', template: 'Utilities $', color: 'text-yellow-500' },
 ];
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, onReceiptScanned }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   // Cycle through placeholders
   useEffect(() => {
@@ -52,10 +60,10 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
   }, [message]);
 
-  // Hide quick replies when typing
+  // Hide quick replies when typing or image selected
   useEffect(() => {
-    setShowQuickReplies(!message.trim());
-  }, [message]);
+    setShowQuickReplies(!message.trim() && !selectedImage);
+  }, [message, selectedImage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,11 +88,169 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     textareaRef.current?.focus();
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({ title: 'Please select an image file', variant: 'destructive' });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: 'Image must be under 5MB', variant: 'destructive' });
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleScanReceipt = async () => {
+    if (!selectedImage) return;
+
+    setIsScanning(true);
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Please sign in to scan receipts');
+      }
+
+      // Upload image to storage
+      const fileName = `${user.id}/${Date.now()}-${selectedImage.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, selectedImage);
+
+      if (uploadError) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Get public URL for the image
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      // For private buckets, we need a signed URL
+      const { data: signedUrlData } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(fileName, 300); // 5 minutes
+
+      const imageUrl = signedUrlData?.signedUrl || publicUrl;
+
+      // Call the scan-receipt edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-receipt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ imageUrl }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to scan receipt');
+      }
+
+      const { amount, merchant, category, confidence } = result.data;
+
+      // Pre-fill the message with extracted data
+      const expenseMessage = `${merchant} $${amount}`;
+      setMessage(expenseMessage);
+      
+      toast({
+        title: confidence === 'high' ? '✅ Receipt scanned!' : '⚠️ Receipt scanned (low confidence)',
+        description: `Found: ${merchant} - $${amount.toFixed(2)}`,
+      });
+
+      // Notify parent if callback provided
+      if (onReceiptScanned) {
+        onReceiptScanned({ amount, merchant, category });
+      }
+
+      // Clear the image
+      clearImage();
+
+    } catch (error) {
+      console.error('Receipt scan error:', error);
+      toast({
+        title: 'Scan failed',
+        description: error instanceof Error ? error.message : 'Could not read receipt',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   return (
     <div className="border-t border-border/30 glass">
+      {/* Image preview */}
+      <AnimatePresence>
+        {imagePreview && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-3 pb-0">
+              <div className="relative inline-block">
+                <img 
+                  src={imagePreview} 
+                  alt="Receipt preview" 
+                  className="h-24 w-auto rounded-xl border border-border/40 shadow-sm object-cover"
+                />
+                <button
+                  onClick={clearImage}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleScanReceipt}
+                disabled={isScanning || disabled}
+                className={cn(
+                  "mt-2 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                  isScanning 
+                    ? "bg-muted text-muted-foreground" 
+                    : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-premium"
+                )}
+              >
+                {isScanning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Scanning receipt...</span>
+                  </>
+                ) : (
+                  <>
+                    <Receipt className="w-4 h-4" />
+                    <span>Scan Receipt</span>
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Quick reply buttons */}
       <AnimatePresence>
-        {showQuickReplies && !disabled && (
+        {showQuickReplies && !disabled && !isScanning && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -124,6 +290,16 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         )}
       </AnimatePresence>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleImageSelect}
+        className="hidden"
+      />
+
       {/* Input form */}
       <motion.form 
         onSubmit={handleSubmit}
@@ -136,16 +312,20 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         className="p-3 transition-all duration-300"
       >
         <div className="flex items-end gap-2">
-          {/* Mic button */}
+          {/* Camera/Receipt button */}
           <motion.div whileTap={{ scale: 0.9 }}>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl h-10 w-10 transition-all duration-200"
-              disabled={disabled}
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl h-10 w-10 transition-all duration-200",
+                selectedImage && "text-primary bg-primary/10"
+              )}
+              disabled={disabled || isScanning}
             >
-              <Mic className="w-5 h-5" />
+              <Camera className="w-5 h-5" />
             </Button>
           </motion.div>
           
@@ -168,14 +348,14 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                 rows={1}
                 className={cn(
                   'w-full bg-transparent px-4 py-3 text-sm resize-none focus:outline-none placeholder:text-muted-foreground/60 transition-all duration-200',
-                  disabled && 'opacity-50 cursor-not-allowed'
+                  (disabled || isScanning) && 'opacity-50 cursor-not-allowed'
                 )}
-                disabled={disabled}
+                disabled={disabled || isScanning}
               />
               
               {/* Sparkle hint */}
               <AnimatePresence>
-                {!message && !isFocused && (
+                {!message && !isFocused && !selectedImage && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -207,7 +387,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                   ? "bg-primary hover:bg-primary/90 shadow-premium text-primary-foreground" 
                   : "bg-muted text-muted-foreground shadow-none"
               )}
-              disabled={disabled || !message.trim()}
+              disabled={disabled || isScanning || !message.trim()}
             >
               <Send className={cn(
                 "w-4 h-4 transition-transform duration-200",
