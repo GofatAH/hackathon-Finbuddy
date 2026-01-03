@@ -156,12 +156,13 @@ export default function Index() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Scroll to bottom when switching to chat view
+  // Scroll to bottom instantly when switching to chat view
   useEffect(() => {
-    if (view === 'chat') {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 100);
+    if (view === 'chat' && messagesEndRef.current) {
+      // Use requestAnimationFrame for instant scroll after render
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      });
     }
   }, [view]);
 
