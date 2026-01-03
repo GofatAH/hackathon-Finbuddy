@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Shield, Play, Music, Tv, Dumbbell, Phone, CreditCard as CreditCardIcon } from 'lucide-react';
+import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type SubscriptionCategory = 'tools' | 'entertainment' | 'productivity' | 'lifestyle' | 'utilities' | 'gaming' | 'music' | 'news' | 'fitness' | 'other';
 
 interface Subscription {
   id: string;
@@ -21,31 +23,72 @@ interface Subscription {
   last_used_date: string | null;
   is_trial: boolean;
   trial_end_date: string | null;
-  category: 'needs' | 'wants';
+  category: SubscriptionCategory;
 }
 
-const SERVICE_ICONS: Record<string, typeof Tv> = {
-  netflix: Tv,
-  spotify: Music,
-  hulu: Tv,
-  disney: Tv,
-  hbo: Tv,
-  amazon: Play,
-  prime: Play,
-  gym: Dumbbell,
-  fitness: Dumbbell,
-  phone: Phone,
-  mobile: Phone,
-  insurance: Shield,
-  default: CreditCardIcon
+const CATEGORY_CONFIG: Record<SubscriptionCategory, { label: string; icon: typeof Tv; color: string; bgColor: string }> = {
+  tools: { label: 'Tools & AI', icon: Wrench, color: 'text-violet-500', bgColor: 'bg-violet-500/10' },
+  entertainment: { label: 'Entertainment', icon: Tv, color: 'text-pink-500', bgColor: 'bg-pink-500/10' },
+  productivity: { label: 'Productivity', icon: Lightbulb, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+  lifestyle: { label: 'Lifestyle', icon: Sparkles, color: 'text-rose-500', bgColor: 'bg-rose-500/10' },
+  utilities: { label: 'Utilities', icon: Wifi, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+  gaming: { label: 'Gaming', icon: Gamepad2, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+  music: { label: 'Music', icon: Music, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
+  news: { label: 'News & Media', icon: Newspaper, color: 'text-slate-500', bgColor: 'bg-slate-500/10' },
+  fitness: { label: 'Fitness', icon: Dumbbell, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+  other: { label: 'Other', icon: MoreHorizontal, color: 'text-gray-500', bgColor: 'bg-gray-500/10' },
 };
 
-const getServiceIcon = (name: string) => {
+// Auto-detect category from service name
+const detectCategory = (name: string): SubscriptionCategory => {
   const lowerName = name.toLowerCase();
-  for (const [key, Icon] of Object.entries(SERVICE_ICONS)) {
-    if (lowerName.includes(key)) return Icon;
+  
+  // Tools & AI
+  if (['lovable', 'chatgpt', 'openai', 'claude', 'github', 'copilot', 'notion', 'figma', 'canva', 'zapier', 'vercel', 'netlify', 'aws', 'heroku', 'digitalocean'].some(s => lowerName.includes(s))) {
+    return 'tools';
   }
-  return SERVICE_ICONS.default;
+  
+  // Entertainment
+  if (['netflix', 'hulu', 'disney', 'hbo', 'paramount', 'peacock', 'amazon prime', 'apple tv', 'youtube premium', 'crunchyroll', 'twitch'].some(s => lowerName.includes(s))) {
+    return 'entertainment';
+  }
+  
+  // Music
+  if (['spotify', 'apple music', 'tidal', 'deezer', 'soundcloud', 'pandora', 'audible'].some(s => lowerName.includes(s))) {
+    return 'music';
+  }
+  
+  // Gaming
+  if (['xbox', 'playstation', 'nintendo', 'steam', 'ea play', 'ubisoft', 'game pass'].some(s => lowerName.includes(s))) {
+    return 'gaming';
+  }
+  
+  // Productivity
+  if (['microsoft 365', 'office', 'google workspace', 'slack', 'zoom', 'asana', 'trello', 'monday', 'dropbox', 'evernote', '1password', 'lastpass'].some(s => lowerName.includes(s))) {
+    return 'productivity';
+  }
+  
+  // Fitness
+  if (['gym', 'fitness', 'peloton', 'strava', 'myfitnesspal', 'fitbit', 'headspace', 'calm'].some(s => lowerName.includes(s))) {
+    return 'fitness';
+  }
+  
+  // News
+  if (['nytimes', 'wsj', 'washington post', 'medium', 'substack', 'economist', 'atlantic'].some(s => lowerName.includes(s))) {
+    return 'news';
+  }
+  
+  // Utilities
+  if (['phone', 'mobile', 'internet', 'electricity', 'water', 'gas', 'insurance', 'vpn', 'icloud', 'google one'].some(s => lowerName.includes(s))) {
+    return 'utilities';
+  }
+  
+  // Lifestyle
+  if (['amazon', 'instacart', 'doordash', 'uber', 'birchbox', 'stitch fix', 'hello fresh'].some(s => lowerName.includes(s))) {
+    return 'lifestyle';
+  }
+  
+  return 'other';
 };
 
 export function Subscriptions() {
@@ -59,10 +102,18 @@ export function Subscriptions() {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
-  const [category, setCategory] = useState<'needs' | 'wants'>('wants');
+  const [category, setCategory] = useState<SubscriptionCategory>('other');
   const [nextCharge, setNextCharge] = useState('');
   const [isTrial, setIsTrial] = useState(false);
   const [trialEndDate, setTrialEndDate] = useState('');
+
+  // Auto-detect category when name changes
+  useEffect(() => {
+    if (name) {
+      const detected = detectCategory(name);
+      setCategory(detected);
+    }
+  }, [name]);
 
   useEffect(() => {
     if (user) {
@@ -85,7 +136,7 @@ export function Subscriptions() {
                 ...payload.new,
                 amount: Number(payload.new.amount),
                 frequency: payload.new.frequency as 'weekly' | 'monthly' | 'yearly',
-                category: payload.new.category as 'needs' | 'wants'
+                category: payload.new.category as SubscriptionCategory
               } as Subscription;
               setSubscriptions(prev => [...prev, newSub].sort((a, b) => 
                 new Date(a.next_charge_date).getTime() - new Date(b.next_charge_date).getTime()
@@ -99,7 +150,7 @@ export function Subscriptions() {
                       ...payload.new, 
                       amount: Number(payload.new.amount),
                       frequency: payload.new.frequency as 'weekly' | 'monthly' | 'yearly',
-                      category: payload.new.category as 'needs' | 'wants'
+                      category: payload.new.category as SubscriptionCategory
                     } as Subscription
                   : s
               ));
@@ -130,7 +181,7 @@ export function Subscriptions() {
         ...s,
         amount: Number(s.amount),
         frequency: s.frequency as 'weekly' | 'monthly' | 'yearly',
-        category: s.category as 'needs' | 'wants'
+        category: s.category as SubscriptionCategory
       })));
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
@@ -163,6 +214,7 @@ export function Subscriptions() {
       setDialogOpen(false);
       resetForm();
     } catch (error) {
+      console.error('Error adding subscription:', error);
       toast({ title: 'Failed to add subscription', variant: 'destructive' });
     }
   };
@@ -171,7 +223,7 @@ export function Subscriptions() {
     setName('');
     setAmount('');
     setNextCharge('');
-    setCategory('wants');
+    setCategory('other');
     setFrequency('monthly');
     setIsTrial(false);
     setTrialEndDate('');
@@ -260,15 +312,24 @@ export function Subscriptions() {
   const unusedSavings = getUnusedSubscriptions().reduce((sum, s) => sum + s.amount, 0);
   const upcomingCharges = getUpcomingSubscriptions().reduce((sum, s) => sum + s.amount, 0);
 
-  const needsSubs = subscriptions.filter(s => s.category === 'needs');
-  const wantsSubs = subscriptions.filter(s => s.category === 'wants');
+  // Group subscriptions by category
+  const groupedSubscriptions = subscriptions.reduce((acc, sub) => {
+    if (!acc[sub.category]) acc[sub.category] = [];
+    acc[sub.category].push(sub);
+    return acc;
+  }, {} as Record<SubscriptionCategory, Subscription[]>);
+
+  const sortedCategories = Object.keys(groupedSubscriptions).sort((a, b) => {
+    const order: SubscriptionCategory[] = ['tools', 'entertainment', 'music', 'gaming', 'productivity', 'fitness', 'lifestyle', 'utilities', 'news', 'other'];
+    return order.indexOf(a as SubscriptionCategory) - order.indexOf(b as SubscriptionCategory);
+  }) as SubscriptionCategory[];
 
   return (
     <div className="p-4 space-y-6 overflow-y-auto h-full pb-24">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Subscriptions</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Subscriptions</h2>
           <p className="text-sm text-muted-foreground">{subscriptions.length} active</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -286,7 +347,7 @@ export function Subscriptions() {
                 <Label htmlFor="name">Service Name</Label>
                 <Input
                   id="name"
-                  placeholder="Netflix, Spotify, Gym..."
+                  placeholder="Netflix, ChatGPT, Spotify..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -305,11 +366,11 @@ export function Subscriptions() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="frequency">Billing Cycle</Label>
-                  <Select value={frequency} onValueChange={(v) => setFrequency(v as any)}>
+                  <Select value={frequency} onValueChange={(v) => setFrequency(v as 'monthly' | 'weekly' | 'yearly')}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover">
                       <SelectItem value="weekly">Weekly</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>
                       <SelectItem value="yearly">Yearly</SelectItem>
@@ -319,13 +380,22 @@ export function Subscriptions() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as 'needs' | 'wants')}>
+                <Select value={category} onValueChange={(v) => setCategory(v as SubscriptionCategory)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="needs">Needs (Essential)</SelectItem>
-                    <SelectItem value="wants">Wants (Entertainment)</SelectItem>
+                  <SelectContent className="bg-popover">
+                    {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                      const Icon = config.icon;
+                      return (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <Icon className={cn("w-4 h-4", config.color)} />
+                            {config.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -383,6 +453,37 @@ export function Subscriptions() {
         </Card>
       </div>
 
+      {/* Category Overview */}
+      {sortedCategories.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+          {sortedCategories.map(cat => {
+            const config = CATEGORY_CONFIG[cat];
+            const Icon = config.icon;
+            const count = groupedSubscriptions[cat].length;
+            const total = groupedSubscriptions[cat].reduce((sum, s) => {
+              if (s.is_trial) return sum;
+              if (s.frequency === 'weekly') return sum + s.amount * 4.33;
+              if (s.frequency === 'yearly') return sum + s.amount / 12;
+              return sum + s.amount;
+            }, 0);
+            
+            return (
+              <div
+                key={cat}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-full shrink-0",
+                  config.bgColor
+                )}
+              >
+                <Icon className={cn("w-4 h-4", config.color)} />
+                <span className="text-sm font-medium">{count}</span>
+                <span className="text-xs text-muted-foreground">${total.toFixed(0)}/mo</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Zombie Warning */}
       {unusedSavings > 0 && (
         <Card className="border-warning/50 bg-warning/10">
@@ -413,7 +514,7 @@ export function Subscriptions() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <CreditCardIcon className="w-8 h-8 text-muted-foreground" />
+              <Tv className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-lg mb-1">No subscriptions yet</h3>
             <p className="text-sm text-muted-foreground mb-4">
@@ -426,51 +527,34 @@ export function Subscriptions() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Needs Section */}
-          {needsSubs.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-500" />
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                  Essential ({needsSubs.length})
-                </h3>
+          {sortedCategories.map(cat => {
+            const config = CATEGORY_CONFIG[cat];
+            const Icon = config.icon;
+            const subs = groupedSubscriptions[cat];
+            
+            return (
+              <div key={cat} className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icon className={cn("w-4 h-4", config.color)} />
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    {config.label} ({subs.length})
+                  </h3>
+                </div>
+                {subs.map(sub => (
+                  <SubscriptionCard 
+                    key={sub.id} 
+                    sub={sub} 
+                    config={config}
+                    onDelete={deleteSubscription}
+                    onMarkUsed={markAsUsed}
+                    getDaysUntilCharge={getDaysUntilCharge}
+                    getDaysSinceUsed={getDaysSinceUsed}
+                    getTrialDaysLeft={getTrialDaysLeft}
+                  />
+                ))}
               </div>
-              {needsSubs.map(sub => (
-                <SubscriptionCard 
-                  key={sub.id} 
-                  sub={sub} 
-                  onDelete={deleteSubscription}
-                  onMarkUsed={markAsUsed}
-                  getDaysUntilCharge={getDaysUntilCharge}
-                  getDaysSinceUsed={getDaysSinceUsed}
-                  getTrialDaysLeft={getTrialDaysLeft}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Wants Section */}
-          {wantsSubs.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Play className="w-4 h-4 text-purple-500" />
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                  Entertainment ({wantsSubs.length})
-                </h3>
-              </div>
-              {wantsSubs.map(sub => (
-                <SubscriptionCard 
-                  key={sub.id} 
-                  sub={sub} 
-                  onDelete={deleteSubscription}
-                  onMarkUsed={markAsUsed}
-                  getDaysUntilCharge={getDaysUntilCharge}
-                  getDaysSinceUsed={getDaysSinceUsed}
-                  getTrialDaysLeft={getTrialDaysLeft}
-                />
-              ))}
-            </div>
-          )}
+            );
+          })}
         </div>
       )}
     </div>
@@ -479,6 +563,7 @@ export function Subscriptions() {
 
 interface SubscriptionCardProps {
   sub: Subscription;
+  config: { label: string; icon: typeof Tv; color: string; bgColor: string };
   onDelete: (id: string) => void;
   onMarkUsed: (id: string) => void;
   getDaysUntilCharge: (date: string) => number;
@@ -486,8 +571,8 @@ interface SubscriptionCardProps {
   getTrialDaysLeft: (sub: Subscription) => number | null;
 }
 
-function SubscriptionCard({ sub, onDelete, onMarkUsed, getDaysUntilCharge, getDaysSinceUsed, getTrialDaysLeft }: SubscriptionCardProps) {
-  const Icon = getServiceIcon(sub.name);
+function SubscriptionCard({ sub, config, onDelete, onMarkUsed, getDaysUntilCharge, getDaysSinceUsed, getTrialDaysLeft }: SubscriptionCardProps) {
+  const Icon = config.icon;
   const daysUntil = getDaysUntilCharge(sub.next_charge_date);
   const daysSinceUsed = getDaysSinceUsed(sub.last_used_date);
   const trialDaysLeft = getTrialDaysLeft(sub);
@@ -505,12 +590,9 @@ function SubscriptionCard({ sub, onDelete, onMarkUsed, getDaysUntilCharge, getDa
           {/* Icon */}
           <div className={cn(
             "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-            sub.category === 'needs' ? 'bg-blue-500/10' : 'bg-purple-500/10'
+            config.bgColor
           )}>
-            <Icon className={cn(
-              "w-5 h-5",
-              sub.category === 'needs' ? 'text-blue-500' : 'text-purple-500'
-            )} />
+            <Icon className={cn("w-5 h-5", config.color)} />
           </div>
 
           {/* Info */}
