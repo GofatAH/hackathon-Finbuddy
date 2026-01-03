@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, personality, userName, budgetInfo } = await req.json();
+    const { message, personality, userName, budgetInfo, conversationHistory } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -69,6 +69,24 @@ Keep responses SHORT - 1-2 sentences max.`;
 
     console.log('Sending request to Lovable AI Gateway');
 
+    // Build messages array with conversation history
+    const chatMessages: { role: string; content: string }[] = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    // Add conversation history (last 10 messages for context)
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      const recentHistory = conversationHistory.slice(-10);
+      for (const msg of recentHistory) {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          chatMessages.push({ role: msg.role, content: msg.content });
+        }
+      }
+    }
+
+    // Add current message
+    chatMessages.push({ role: 'user', content: message });
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -77,10 +95,7 @@ Keep responses SHORT - 1-2 sentences max.`;
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
+        messages: chatMessages,
         stream: true,
       }),
     });
