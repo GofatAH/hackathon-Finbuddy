@@ -261,6 +261,46 @@ export function Subscriptions() {
     }
   };
 
+  const convertToPaid = async (id: string) => {
+    try {
+      const sub = subscriptions.find(s => s.id === id);
+      if (!sub) return;
+
+      // Calculate next charge date based on frequency
+      const nextChargeDate = new Date();
+      if (sub.frequency === 'monthly') {
+        nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
+      } else if (sub.frequency === 'weekly') {
+        nextChargeDate.setDate(nextChargeDate.getDate() + 7);
+      } else if (sub.frequency === 'yearly') {
+        nextChargeDate.setFullYear(nextChargeDate.getFullYear() + 1);
+      }
+
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ 
+          is_trial: false, 
+          trial_end_date: null,
+          next_charge_date: nextChargeDate.toISOString().split('T')[0]
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setSubscriptions(prev => prev.map(s => 
+        s.id === id ? { 
+          ...s, 
+          is_trial: false, 
+          trial_end_date: null,
+          next_charge_date: nextChargeDate.toISOString().split('T')[0]
+        } : s
+      ));
+      toast({ title: '✅ Converted to paid subscription!' });
+    } catch (error) {
+      toast({ title: 'Failed to convert', variant: 'destructive' });
+    }
+  };
+
   const getDaysUntilCharge = (date: string) => {
     const chargeDate = new Date(date);
     const today = new Date();
@@ -573,21 +613,34 @@ export function Subscriptions() {
                         </p>
                       </div>
                       
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                        onClick={() => deleteSubscription(trial.id)}
-                        title="Cancel trial"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs bg-green-500/10 border-green-500/30 text-green-600 hover:bg-green-500/20 hover:text-green-700"
+                          onClick={() => convertToPaid(trial.id)}
+                          title="Keep subscription"
+                        >
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Keep
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => deleteSubscription(trial.id)}
+                          title="Cancel trial"
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
                     
                     {isUrgent && (
                       <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" />
-                        Cancel now to avoid being charged ${trial.amount.toFixed(2)}
+                        Decide now: Keep it or cancel to avoid ${trial.amount.toFixed(2)} charge
                       </p>
                     )}
                   </div>
