@@ -132,6 +132,60 @@ export function useExpenses() {
     }
   };
 
+  const updateExpense = async (id: string, updates: {
+    amount?: number;
+    category?: 'needs' | 'wants' | 'savings';
+    merchant?: string;
+    description?: string;
+    expense_date?: string;
+  }) => {
+    if (!user) return { error: new Error('Not authenticated') };
+    
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      const updatedExpense = {
+        ...data,
+        amount: Number(data.amount),
+        category: data.category as 'needs' | 'wants' | 'savings'
+      };
+      
+      setExpenses(prev => prev.map(e => e.id === id ? updatedExpense : e));
+      return { data: updatedExpense, error: null };
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      return { error: error as Error };
+    }
+  };
+
+  const deleteExpense = async (id: string) => {
+    if (!user) return { error: new Error('Not authenticated') };
+    
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      return { error: null };
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      return { error: error as Error };
+    }
+  };
+
   const getSpendingByCategory = () => {
     const totals = { needs: 0, wants: 0, savings: 0 };
     
@@ -146,6 +200,8 @@ export function useExpenses() {
     expenses,
     loading,
     addExpense,
+    updateExpense,
+    deleteExpense,
     getSpendingByCategory,
     refetch: fetchExpenses
   };
