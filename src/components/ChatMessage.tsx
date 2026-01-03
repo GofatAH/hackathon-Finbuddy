@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCheck, ThumbsUp, Heart, Laugh, Sparkles } from 'lucide-react';
+import { CheckCheck, ThumbsUp, Heart, Laugh, Sparkles, User } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -11,6 +11,7 @@ interface Message {
 
 interface ChatMessageProps {
   message: Message;
+  userAvatarUrl?: string | null;
 }
 
 const reactions = [
@@ -20,7 +21,7 @@ const reactions = [
   { emoji: '✨', icon: Sparkles, label: 'Amazing' },
 ];
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, userAvatarUrl }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
   const [showReactions, setShowReactions] = useState(false);
@@ -146,9 +147,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 20 }}
-          className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-muted flex items-center justify-center shrink-0 shadow-sm border border-border/40"
+          className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-muted flex items-center justify-center shrink-0 shadow-sm border border-border/40 overflow-hidden"
         >
-          <span className="text-sm">👤</span>
+          {userAvatarUrl ? (
+            <img src={userAvatarUrl} alt="You" className="w-full h-full object-cover" />
+          ) : (
+            <User className="w-4 h-4 text-primary/60" />
+          )}
         </motion.div>
       )}
     </motion.div>
