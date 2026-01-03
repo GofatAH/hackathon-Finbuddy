@@ -43,6 +43,7 @@ export default function Index() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [chatLoaded, setChatLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
   const { user, signOut } = useAuth();
   const { profile, getBudgetAmounts } = useProfile();
@@ -158,13 +159,11 @@ export default function Index() {
 
   // Scroll to bottom instantly when switching to chat view
   useEffect(() => {
-    if (view === 'chat' && messagesEndRef.current) {
-      // Use requestAnimationFrame for instant scroll after render
-      requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
-      });
+    if (view === 'chat' && chatContainerRef.current) {
+      // Set scroll position immediately to bottom
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [view]);
+  }, [view, messages.length]);
 
   // Swipe gesture handling
   const touchStartX = useRef<number>(0);
@@ -511,7 +510,10 @@ export default function Index() {
                   </AlertDialog>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin bg-gradient-to-b from-background/50 to-background">
+                <div 
+                  ref={chatContainerRef}
+                  className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin bg-gradient-to-b from-background/50 to-background"
+                >
                   {messages.length === 0 && (
                     <motion.div 
                       initial={{ opacity: 0, y: 20 }}
