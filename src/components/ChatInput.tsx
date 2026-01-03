@@ -295,7 +295,6 @@ export function ChatInput({ onSend, disabled, onReceiptScanned }: ChatInputProps
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleImageSelect}
         className="hidden"
       />
