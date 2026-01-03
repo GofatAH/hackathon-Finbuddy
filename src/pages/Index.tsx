@@ -450,33 +450,67 @@ export default function Index() {
                   </AlertDialog>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+                <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin bg-gradient-to-b from-background/50 to-background">
+                  {messages.length === 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col items-center justify-center h-full text-center px-6"
+                    >
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 shadow-premium-lg">
+                        <span className="text-3xl">💚</span>
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Welcome to FinBuddy</h3>
+                      <p className="text-sm text-muted-foreground max-w-xs">
+                        Tell me about your expenses naturally, like "coffee $5 at Starbucks" and I'll help you track them!
+                      </p>
+                    </motion.div>
+                  )}
+                  
                   {messages.map((msg, index) => (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                      initial={{ opacity: 0, y: 16, scale: 0.97 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{ 
-                        delay: Math.min(index * 0.04, 0.4), 
-                        duration: 0.3,
-                        ease: [0.4, 0, 0.2, 1]
+                        delay: Math.min(index * 0.05, 0.5), 
+                        duration: 0.35,
+                        ease: [0.22, 1, 0.36, 1]
                       }}
                     >
                       <ChatMessage message={msg} />
                     </motion.div>
                   ))}
+                  
                   {isStreaming && messages[messages.length - 1]?.content === '' && (
                     <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center gap-1.5 p-4 bg-chat-buddy/50 rounded-2xl rounded-bl-md w-fit shadow-sm border border-border/30"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2"
                     >
-                      <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
-                      <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
-                      <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-premium">
+                        <span className="text-sm">💚</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-4 py-3 bg-card rounded-2xl rounded-bl-md shadow-premium border border-border/40">
+                        <motion.div 
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                          className="w-2 h-2 bg-primary rounded-full"
+                        />
+                        <motion.div 
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }}
+                          className="w-2 h-2 bg-primary rounded-full"
+                        />
+                        <motion.div 
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ repeat: Infinity, duration: 0.6, delay: 0.3 }}
+                          className="w-2 h-2 bg-primary rounded-full"
+                        />
+                      </div>
                     </motion.div>
                   )}
-                  <div ref={messagesEndRef} />
+                  <div ref={messagesEndRef} className="h-2" />
                 </div>
                 <ChatInput onSend={sendMessage} disabled={isStreaming} />
               </div>
