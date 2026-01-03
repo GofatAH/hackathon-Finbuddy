@@ -2,95 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
+/* FinBuddy Design System - Green Gradient Palette */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Main palette from brand colors */
+    --finbuddy-dark: 160 72% 7%;       /* #051F20 - Darkest green */
+    --finbuddy-deep: 158 61% 10%;      /* #0B2B26 - Deep forest */
+    --finbuddy-forest: 157 43% 15%;    /* #163832 - Forest green */
+    --finbuddy-sage: 157 34% 24%;      /* #235347 - Sage green */
+    --finbuddy-mint: 148 24% 64%;      /* #8EB69B - Light mint */
+    --finbuddy-light: 138 37% 89%;     /* #D6EBD9 - Very light mint */
+    
+    /* Semantic colors */
+    --background: 138 37% 89%;         /* Light mint background */
+    --foreground: 160 72% 7%;          /* Dark green text */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 160 72% 7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 160 72% 7%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 157 43% 15%;            /* Forest green */
+    --primary-foreground: 138 37% 89%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 148 24% 64%;          /* Mint */
+    --secondary-foreground: 160 72% 7%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 148 20% 75%;
+    --muted-foreground: 157 34% 35%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 157 34% 24%;             /* Sage */
+    --accent-foreground: 138 37% 89%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 98%;
+    --border: 148 20% 70%;
+    --input: 148 20% 80%;
+    --ring: 157 43% 15%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --radius: 1rem;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Category colors */
+    --needs: 142 76% 36%;              /* Green */
+    --wants: 217 91% 60%;              /* Blue */
+    --savings: 45 93% 47%;             /* Gold */
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Budget status colors */
+    --budget-safe: 142 76% 36%;        /* 0-75% */
+    --budget-warning: 38 92% 50%;      /* 76-90% */
+    --budget-danger: 0 84% 60%;        /* 91%+ */
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* Chat bubble colors */
+    --chat-user: 157 43% 15%;
+    --chat-user-foreground: 138 37% 89%;
+    --chat-buddy: 148 24% 64%;
+    --chat-buddy-foreground: 160 72% 7%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 158 61% 10%;
+    --sidebar-foreground: 138 37% 89%;
+    --sidebar-primary: 148 24% 64%;
+    --sidebar-primary-foreground: 160 72% 7%;
+    --sidebar-accent: 157 34% 24%;
+    --sidebar-accent-foreground: 138 37% 89%;
+    --sidebar-border: 157 43% 20%;
+    --sidebar-ring: 148 24% 64%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 160 72% 7%;
+    --foreground: 138 37% 89%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 158 61% 10%;
+    --card-foreground: 138 37% 89%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 158 61% 10%;
+    --popover-foreground: 138 37% 89%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 148 24% 64%;
+    --primary-foreground: 160 72% 7%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 157 43% 15%;
+    --secondary-foreground: 138 37% 89%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 157 34% 20%;
+    --muted-foreground: 148 20% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 157 34% 24%;
+    --accent-foreground: 138 37% 89%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 157 34% 20%;
+    --input: 157 34% 18%;
+    --ring: 148 24% 64%;
+
+    --chat-user: 148 24% 64%;
+    --chat-user-foreground: 160 72% 7%;
+    --chat-buddy: 157 43% 15%;
+    --chat-buddy-foreground: 138 37% 89%;
+
+    --sidebar-background: 160 72% 5%;
+    --sidebar-foreground: 138 37% 89%;
+    --sidebar-primary: 148 24% 64%;
+    --sidebar-primary-foreground: 160 72% 7%;
+    --sidebar-accent: 157 34% 18%;
+    --sidebar-accent-foreground: 138 37% 89%;
+    --sidebar-border: 157 34% 15%;
+    --sidebar-ring: 148 24% 64%;
   }
 }
 
@@ -100,6 +127,63 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Custom scrollbar for chat */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Progress ring animations */
+@keyframes progress-fill {
+  from {
+    stroke-dashoffset: 283;
+  }
+}
+
+.animate-progress {
+  animation: progress-fill 1s ease-out forwards;
+}
+
+/* Chat typing indicator */
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+.typing-dot {
+  animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
 }
