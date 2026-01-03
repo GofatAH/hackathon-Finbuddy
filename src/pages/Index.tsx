@@ -155,6 +155,15 @@ export default function Index() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Scroll to bottom when switching to chat view
+  useEffect(() => {
+    if (view === 'chat') {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 100);
+    }
+  }, [view]);
+
   const sendMessage = async (content: string) => {
     if (!content.trim() || isStreaming) return;
 
