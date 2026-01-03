@@ -43,6 +43,8 @@ export default function Index() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [chatLoaded, setChatLoaded] = useState(false);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const lastSeenMessageCount = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
@@ -171,8 +173,28 @@ export default function Index() {
     const el = chatContainerRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setShowJumpToLatest(distanceFromBottom > 150);
-  }, []);
+    const isScrolledUp = distanceFromBottom > 150;
+    
+    if (isScrolledUp && !showJumpToLatest) {
+      // User just scrolled up - record current message count
+      lastSeenMessageCount.current = messages.length;
+    }
+    
+    setShowJumpToLatest(isScrolledUp);
+    
+    if (!isScrolledUp) {
+      // User is at bottom - reset unread count
+      setUnreadCount(0);
+      lastSeenMessageCount.current = messages.length;
+    }
+  }, [showJumpToLatest, messages.length]);
+
+  // Track new messages while scrolled up
+  useEffect(() => {
+    if (showJumpToLatest && messages.length > lastSeenMessageCount.current) {
+      setUnreadCount(messages.length - lastSeenMessageCount.current);
+    }
+  }, [messages.length, showJumpToLatest]);
 
   // Jump to latest message
   const jumpToLatest = useCallback(() => {
@@ -180,7 +202,9 @@ export default function Index() {
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     setShowJumpToLatest(false);
-  }, []);
+    setUnreadCount(0);
+    lastSeenMessageCount.current = messages.length;
+  }, [messages.length]);
 
   // Swipe gesture handling
   const touchStartX = useRef<number>(0);
@@ -611,7 +635,18 @@ export default function Index() {
                       className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full shadow-premium-lg hover:bg-primary/90 transition-colors z-10"
                     >
                       <ArrowDown className="w-4 h-4" />
-                      <span className="text-sm font-medium">Jump to latest</span>
+                      <span className="text-sm font-medium">
+                        {unreadCount > 0 ? `${unreadCount} new message${unreadCount > 1 ? 's' : ''}` : 'Jump to latest'}
+                      </span>
+                      {unreadCount > 0 && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center"
+                        >
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </motion.span>
+                      )}
                     </motion.button>
                   )}
                 </AnimatePresence>
