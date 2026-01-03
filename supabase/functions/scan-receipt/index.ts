@@ -39,26 +39,37 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a receipt OCR assistant. Analyze the receipt image and extract:
-1. The total amount (the final amount paid)
-2. The merchant/store name
-3. A brief description of what was purchased
-4. The category (one of: needs, wants, savings)
+            content: `You are a receipt OCR assistant. Analyze the receipt image and extract ALL details:
+
+1. **Merchant/Brand**: The store name, restaurant name, or brand (e.g., "Starbucks", "Walmart", "McDonald's")
+2. **Items**: List of individual items or dishes purchased with their prices
+3. **Total Amount**: The final total paid (after tax/tips if shown)
+4. **Category**: Categorize as needs, wants, or savings
 
 Respond ONLY with valid JSON in this exact format:
 {
-  "amount": 12.99,
-  "merchant": "Store Name",
-  "description": "Brief description",
-  "category": "needs",
+  "amount": 25.99,
+  "merchant": "Store/Restaurant Name",
+  "items": [
+    {"name": "Item 1", "price": 5.99},
+    {"name": "Item 2", "price": 8.50}
+  ],
+  "description": "2 items from Store Name",
+  "category": "wants",
   "confidence": "high"
 }
 
-If you cannot read the receipt clearly, set confidence to "low".
-For category:
-- "needs" = groceries, utilities, gas, essential items
-- "wants" = restaurants, entertainment, shopping, subscriptions
-- "savings" = investments, savings deposits`
+Guidelines:
+- For restaurants: list dishes/drinks ordered
+- For grocery stores: list main items if visible
+- For retail: list products purchased
+- If items are unclear, provide best guess or "Various items"
+- Set confidence to "low" if receipt is blurry or hard to read
+
+Categories:
+- "needs" = groceries, utilities, gas, pharmacy, healthcare
+- "wants" = restaurants, coffee shops, entertainment, shopping
+- "savings" = savings deposits, investments`
           },
           {
             role: 'user',
@@ -115,6 +126,7 @@ For category:
       data: {
         amount: extractedData.amount || 0,
         merchant: extractedData.merchant || 'Unknown',
+        items: extractedData.items || [],
         description: extractedData.description || '',
         category: extractedData.category || 'wants',
         confidence: extractedData.confidence || 'low',

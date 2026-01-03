@@ -163,15 +163,25 @@ export function ChatInput({ onSend, disabled, onReceiptScanned }: ChatInputProps
         throw new Error(result.error || 'Failed to scan receipt');
       }
 
-      const { amount, merchant, category, confidence } = result.data;
+      const { amount, merchant, items, description, category, confidence } = result.data;
 
-      // Pre-fill the message with extracted data
-      const expenseMessage = `${merchant} $${amount}`;
+      // Build a detailed message with items if available
+      let expenseMessage = `${merchant} $${amount}`;
+      if (items && items.length > 0) {
+        const itemNames = items.slice(0, 3).map((item: { name: string }) => item.name).join(', ');
+        expenseMessage = `${merchant} $${amount} - ${itemNames}${items.length > 3 ? '...' : ''}`;
+      }
       setMessage(expenseMessage);
+      
+      // Build toast description with items
+      let toastDescription = `${merchant} - $${amount.toFixed(2)}`;
+      if (items && items.length > 0) {
+        toastDescription += `\nItems: ${items.map((item: { name: string; price: number }) => `${item.name} ($${item.price})`).join(', ')}`;
+      }
       
       toast({
         title: confidence === 'high' ? '✅ Receipt scanned!' : '⚠️ Receipt scanned (low confidence)',
-        description: `Found: ${merchant} - $${amount.toFixed(2)}`,
+        description: toastDescription,
       });
 
       // Notify parent if callback provided
