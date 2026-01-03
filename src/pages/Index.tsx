@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useExpenses } from '@/hooks/useExpenses';
@@ -25,27 +25,16 @@ export default function Index() {
   const [view, setView] = useState<View>('chat');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [chatLoaded, setChatLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { profile, getBudgetAmounts } = useProfile();
-  const { expenses, addExpense, getSpendingByCategory } = useExpenses();
+  const { addExpense, getSpendingByCategory, refetch: refetchExpenses } = useExpenses();
   const { toast } = useToast();
 
-  // Load initial greeting
-  useEffect(() => {
-    if (profile && messages.length === 0) {
-      const greeting = getGreeting();
-      setMessages([{ id: 'greeting', role: 'assistant', content: greeting }]);
-    }
-  }, [profile]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const getGreeting = () => {
+  // Get greeting message
+  const getGreeting = useCallback(() => {
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
     const name = profile?.name || 'friend';
@@ -59,7 +48,72 @@ export default function Index() {
     };
     
     return greetings[personality];
+  }, [profile?.name, profile?.personality]);
+
+  // Load chat history from database
+  useEffect(() => {
+    if (user && !chatLoaded) {
+      loadChatHistory();
+    }
+  }, [user, chatLoaded]);
+
+  const loadChatHistory = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setMessages(data.map(m => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          content: m.content
+        })));
+      } else if (profile) {
+        // No history, show greeting
+        const greeting = getGreeting();
+        setMessages([{ id: 'greeting', role: 'assistant', content: greeting }]);
+      }
+      setChatLoaded(true);
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      setChatLoaded(true);
+    }
   };
+
+  // Show greeting when profile loads if no messages yet
+  useEffect(() => {
+    if (profile && chatLoaded && messages.length === 0) {
+      const greeting = getGreeting();
+      setMessages([{ id: 'greeting', role: 'assistant', content: greeting }]);
+    }
+  }, [profile, chatLoaded, messages.length, getGreeting]);
+
+  // Save message to database
+  const saveMessage = async (role: 'user' | 'assistant', content: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase.from('chat_messages').insert({
+        user_id: user.id,
+        role,
+        content
+      });
+    } catch (error) {
+      console.error('Error saving message:', error);
+    }
+  };
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || isStreaming) return;
@@ -71,6 +125,7 @@ export default function Index() {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    saveMessage('user', content.trim());
     setIsStreaming(true);
 
     const spending = getSpendingByCategory();
@@ -177,13 +232,43 @@ export default function Index() {
         }
       }
 
+      // Parse expense from text if not found in structured data
+      if (!expenseData) {
+        const expenseMatch = assistantContent.match(/\[EXPENSE_DATA:(.*?)\]/);
+        if (expenseMatch) {
+          try {
+            expenseData = JSON.parse(expenseMatch[1]);
+            // Clean the marker from displayed message
+            assistantContent = assistantContent.replace(/\[EXPENSE_DATA:.*?\]/, '').trim();
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage.role === 'assistant') {
+                lastMessage.content = assistantContent;
+              }
+              return newMessages;
+            });
+          } catch (e) {
+            console.error('Failed to parse expense data:', e);
+          }
+        }
+      }
+
       // If expense was parsed, add it to the database
       if (expenseData) {
-        await addExpense({
+        const result = await addExpense({
           amount: expenseData.amount,
           category: expenseData.category,
           merchant: expenseData.merchant
         });
+        if (!result.error) {
+          refetchExpenses();
+        }
+      }
+
+      // Save assistant message to database
+      if (assistantContent) {
+        saveMessage('assistant', assistantContent);
       }
 
     } catch (error) {
