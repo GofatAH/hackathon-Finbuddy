@@ -570,7 +570,7 @@ export default function Index() {
                         ease: [0.22, 1, 0.36, 1]
                       }}
                     >
-                      <ChatMessage message={msg} />
+                      <ChatMessage message={msg} userAvatarUrl={profile?.avatar_url} />
                     </motion.div>
                   ))}
                   
