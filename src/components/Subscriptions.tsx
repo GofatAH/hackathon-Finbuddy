@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi, Timer, Bell } from 'lucide-react';
@@ -97,6 +97,8 @@ export function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [trialToConvert, setTrialToConvert] = useState<Subscription | null>(null);
   
   // Form state
   const [name, setName] = useState('');
@@ -261,18 +263,22 @@ export function Subscriptions() {
     }
   };
 
-  const convertToPaid = async (id: string) => {
-    try {
-      const sub = subscriptions.find(s => s.id === id);
-      if (!sub) return;
+  const openConvertDialog = (sub: Subscription) => {
+    setTrialToConvert(sub);
+    setConvertDialogOpen(true);
+  };
 
+  const confirmConvertToPaid = async () => {
+    if (!trialToConvert) return;
+    
+    try {
       // Calculate next charge date based on frequency
       const nextChargeDate = new Date();
-      if (sub.frequency === 'monthly') {
+      if (trialToConvert.frequency === 'monthly') {
         nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
-      } else if (sub.frequency === 'weekly') {
+      } else if (trialToConvert.frequency === 'weekly') {
         nextChargeDate.setDate(nextChargeDate.getDate() + 7);
-      } else if (sub.frequency === 'yearly') {
+      } else if (trialToConvert.frequency === 'yearly') {
         nextChargeDate.setFullYear(nextChargeDate.getFullYear() + 1);
       }
 
@@ -283,12 +289,12 @@ export function Subscriptions() {
           trial_end_date: null,
           next_charge_date: nextChargeDate.toISOString().split('T')[0]
         })
-        .eq('id', id);
+        .eq('id', trialToConvert.id);
       
       if (error) throw error;
       
       setSubscriptions(prev => prev.map(s => 
-        s.id === id ? { 
+        s.id === trialToConvert.id ? { 
           ...s, 
           is_trial: false, 
           trial_end_date: null,
@@ -296,6 +302,8 @@ export function Subscriptions() {
         } : s
       ));
       toast({ title: '✅ Converted to paid subscription!' });
+      setConvertDialogOpen(false);
+      setTrialToConvert(null);
     } catch (error) {
       toast({ title: 'Failed to convert', variant: 'destructive' });
     }
@@ -485,6 +493,77 @@ export function Subscriptions() {
         </Dialog>
       </div>
 
+      {/* Convert Trial Confirmation Dialog */}
+      <Dialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              Keep {trialToConvert?.name}?
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              You're about to convert this trial to a paid subscription.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {trialToConvert && (
+            <div className="py-4 space-y-4">
+              <div className="p-4 rounded-xl bg-muted/50 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Service</span>
+                  <span className="font-semibold">{trialToConvert.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Price</span>
+                  <span className="font-bold text-lg">
+                    ${trialToConvert.amount.toFixed(2)}/{trialToConvert.frequency === 'monthly' ? 'mo' : trialToConvert.frequency === 'weekly' ? 'wk' : 'yr'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">First charge</span>
+                  <span className="text-sm">
+                    {(() => {
+                      const date = new Date();
+                      if (trialToConvert.frequency === 'monthly') date.setMonth(date.getMonth() + 1);
+                      else if (trialToConvert.frequency === 'weekly') date.setDate(date.getDate() + 7);
+                      else date.setFullYear(date.getFullYear() + 1);
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-border">
+                  <span className="text-sm text-muted-foreground">Yearly cost</span>
+                  <span className="font-semibold text-primary">
+                    ${(trialToConvert.frequency === 'monthly' 
+                      ? trialToConvert.amount * 12 
+                      : trialToConvert.frequency === 'weekly' 
+                        ? trialToConvert.amount * 52 
+                        : trialToConvert.amount
+                    ).toFixed(2)}/yr
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setConvertDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmConvertToPaid}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Yes, Keep Subscription
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
@@ -618,7 +697,7 @@ export function Subscriptions() {
                           variant="outline"
                           size="sm"
                           className="h-8 text-xs bg-green-500/10 border-green-500/30 text-green-600 hover:bg-green-500/20 hover:text-green-700"
-                          onClick={() => convertToPaid(trial.id)}
+                          onClick={() => openConvertDialog(trial)}
                           title="Keep subscription"
                         >
                           <CheckCircle2 className="w-3 h-3 mr-1" />
