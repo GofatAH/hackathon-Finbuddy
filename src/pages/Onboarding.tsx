@@ -7,13 +7,14 @@ import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { personalities, PersonalityType } from '@/lib/personalities';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowRight, Check } from 'lucide-react';
+import { Loader2, ArrowRight, Check, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import demoVideo from '@/assets/demo-video.mp4';
 
-type Step = 'name' | 'income' | 'budget' | 'personality';
+type Step = 'welcome' | 'name' | 'income' | 'budget' | 'personality';
 
 export default function Onboarding() {
-  const [step, setStep] = useState<Step>('name');
+  const [step, setStep] = useState<Step>('welcome');
   const [name, setName] = useState('');
   const [income, setIncome] = useState('');
   const [budgetSplit, setBudgetSplit] = useState({ needs: 50, wants: 30, savings: 20 });
@@ -34,7 +35,7 @@ export default function Onboarding() {
       return;
     }
     
-    const steps: Step[] = ['name', 'income', 'budget', 'personality'];
+    const steps: Step[] = ['welcome', 'name', 'income', 'budget', 'personality'];
     const currentIndex = steps.indexOf(step);
     if (currentIndex < steps.length - 1) {
       setStep(steps[currentIndex + 1]);
@@ -76,13 +77,13 @@ export default function Onboarding() {
       <div className="w-full max-w-lg animate-fade-in">
         {/* Progress */}
         <div className="flex justify-center gap-2 mb-8">
-          {['name', 'income', 'budget', 'personality'].map((s, i) => (
+          {['welcome', 'name', 'income', 'budget', 'personality'].map((s, i) => (
             <div
               key={s}
               className={cn(
                 'w-3 h-3 rounded-full transition-all',
                 step === s ? 'bg-finbuddy-mint scale-125' : 
-                ['name', 'income', 'budget', 'personality'].indexOf(step) > i ? 'bg-finbuddy-sage' : 'bg-finbuddy-forest'
+                ['welcome', 'name', 'income', 'budget', 'personality'].indexOf(step) > i ? 'bg-finbuddy-sage' : 'bg-finbuddy-forest'
               )}
             />
           ))}
@@ -90,6 +91,36 @@ export default function Onboarding() {
 
         <Card className="border-0 shadow-2xl bg-card/95 backdrop-blur overflow-hidden">
           <CardContent className="p-8">
+            {/* Step 0: Welcome with Demo Video */}
+            {step === 'welcome' && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold mb-2">Welcome to FinBuddy</h2>
+                  <p className="text-muted-foreground">Track expenses naturally, like texting a friend</p>
+                </div>
+                
+                <div className="relative rounded-2xl overflow-hidden bg-black/20 aspect-[9/16] max-h-[320px] mx-auto">
+                  <video
+                    src={demoVideo}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-3 left-3 right-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                    <p className="text-xs text-white/90 text-center">
+                      Just type your expenses like a chat message!
+                    </p>
+                  </div>
+                </div>
+
+                <Button onClick={handleNext} className="w-full h-12 text-lg">
+                  Get Started <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </div>
+            )}
+
             {/* Step 1: Name */}
             {step === 'name' && (
               <div className="space-y-6 animate-fade-in">
