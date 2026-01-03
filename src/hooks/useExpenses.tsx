@@ -21,6 +21,42 @@ export function useExpenses() {
   useEffect(() => {
     if (user) {
       fetchExpenses();
+      
+      // Subscribe to realtime changes
+      const channel = supabase
+        .channel('expenses-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'expenses',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newExpense = {
+                ...payload.new,
+                amount: Number(payload.new.amount),
+                category: payload.new.category as 'needs' | 'wants' | 'savings'
+              } as Expense;
+              setExpenses(prev => [newExpense, ...prev]);
+            } else if (payload.eventType === 'DELETE') {
+              setExpenses(prev => prev.filter(e => e.id !== payload.old.id));
+            } else if (payload.eventType === 'UPDATE') {
+              setExpenses(prev => prev.map(e => 
+                e.id === payload.new.id 
+                  ? { ...payload.new, amount: Number(payload.new.amount), category: payload.new.category as 'needs' | 'wants' | 'savings' } as Expense
+                  : e
+              ));
+            }
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setExpenses([]);
       setLoading(false);
