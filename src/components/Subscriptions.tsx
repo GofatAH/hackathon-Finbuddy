@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi } from 'lucide-react';
+import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi, Timer, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type SubscriptionCategory = 'tools' | 'entertainment' | 'productivity' | 'lifestyle' | 'utilities' | 'gaming' | 'music' | 'news' | 'fitness' | 'other';
@@ -309,8 +309,21 @@ export function Subscriptions() {
     });
   };
 
+  const getActiveTrials = () => {
+    return subscriptions.filter(s => {
+      if (!s.is_trial || !s.trial_end_date) return false;
+      const daysLeft = getTrialDaysLeft(s);
+      return daysLeft !== null && daysLeft >= 0;
+    }).sort((a, b) => {
+      const daysA = getTrialDaysLeft(a) || 0;
+      const daysB = getTrialDaysLeft(b) || 0;
+      return daysA - daysB;
+    });
+  };
+
   const unusedSavings = getUnusedSubscriptions().reduce((sum, s) => sum + s.amount, 0);
   const upcomingCharges = getUpcomingSubscriptions().reduce((sum, s) => sum + s.amount, 0);
+  const activeTrials = getActiveTrials();
 
   // Group subscriptions by category
   const groupedSubscriptions = subscriptions.reduce((acc, sub) => {
@@ -482,6 +495,107 @@ export function Subscriptions() {
             );
           })}
         </div>
+      )}
+
+      {/* Active Trials Section */}
+      {activeTrials.length > 0 && (
+        <Card className="border-yellow-500/50 bg-gradient-to-br from-yellow-500/10 to-orange-500/5">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 rounded-full bg-yellow-500/20">
+                <Timer className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-yellow-700 dark:text-yellow-400">Active Trials</p>
+                <p className="text-xs text-muted-foreground">{activeTrials.length} trial{activeTrials.length > 1 ? 's' : ''} to watch</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {activeTrials.map(trial => {
+                const daysLeft = getTrialDaysLeft(trial) || 0;
+                const trialConfig = CATEGORY_CONFIG[trial.category];
+                const TrialIcon = trialConfig.icon;
+                const isUrgent = daysLeft <= 3;
+                const progressPercent = trial.trial_end_date 
+                  ? Math.max(0, Math.min(100, (1 - daysLeft / 30) * 100))
+                  : 0;
+                
+                return (
+                  <div 
+                    key={trial.id} 
+                    className={cn(
+                      "p-3 rounded-xl transition-all",
+                      isUrgent 
+                        ? "bg-red-500/10 border border-red-500/30" 
+                        : "bg-background/50 border border-border/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                        trialConfig.bgColor
+                      )}>
+                        <TrialIcon className={cn("w-5 h-5", trialConfig.color)} />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold truncate">{trial.name}</h4>
+                          {isUrgent && (
+                            <Bell className="w-4 h-4 text-red-500 animate-pulse" />
+                          )}
+                        </div>
+                        
+                        {/* Countdown Timer */}
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className={cn(
+                                "h-full rounded-full transition-all",
+                                isUrgent ? "bg-red-500" : "bg-yellow-500"
+                              )}
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                          <span className={cn(
+                            "text-sm font-bold shrink-0",
+                            isUrgent ? "text-red-500" : "text-yellow-600"
+                          )}>
+                            {daysLeft === 0 ? 'Ends today!' : daysLeft === 1 ? '1 day left' : `${daysLeft} days`}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-muted-foreground">Then</p>
+                        <p className="font-bold text-foreground">
+                          ${trial.amount.toFixed(2)}/{trial.frequency === 'monthly' ? 'mo' : trial.frequency === 'weekly' ? 'wk' : 'yr'}
+                        </p>
+                      </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                        onClick={() => deleteSubscription(trial.id)}
+                        title="Cancel trial"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    
+                    {isUrgent && (
+                      <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Cancel now to avoid being charged ${trial.amount.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Zombie Warning */}
