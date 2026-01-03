@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -152,18 +152,13 @@ export default function Index() {
     }
   };
 
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Scroll to bottom instantly when switching to chat view
-  useEffect(() => {
-    if (view === 'chat' && chatContainerRef.current) {
-      // Set scroll position immediately to bottom
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [view, messages.length]);
+  // Keep chat pinned to the latest message (no visible scrolling)
+  useLayoutEffect(() => {
+    if (view !== 'chat') return;
+    const el = chatContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [view, messages.length, isStreaming]);
 
   // Swipe gesture handling
   const touchStartX = useRef<number>(0);
@@ -511,7 +506,12 @@ export default function Index() {
                 </div>
                 
                 <div 
-                  ref={chatContainerRef}
+                  ref={(node) => {
+                    chatContainerRef.current = node;
+                    if (node && view === 'chat') {
+                      node.scrollTop = node.scrollHeight;
+                    }
+                  }}
                   className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin bg-gradient-to-b from-background/50 to-background"
                 >
                   {messages.length === 0 && (
