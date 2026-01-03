@@ -206,20 +206,38 @@ export default function Index() {
     lastSeenMessageCount.current = messages.length;
   }, [messages.length]);
 
-  // Swipe gesture handling
+  // Swipe gesture handling - only from top or bottom edges
   const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
   const touchEndX = useRef<number>(0);
+  const isEdgeSwipe = useRef<boolean>(false);
   const minSwipeDistance = 50;
+  const edgeThreshold = 80; // px from top or bottom to trigger swipe
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+    const touchY = e.touches[0].clientY;
+    const windowHeight = window.innerHeight;
+    
+    // Only enable swipe if touch starts in top or bottom edge zone
+    isEdgeSwipe.current = touchY < edgeThreshold || touchY > windowHeight - edgeThreshold;
+    
+    if (isEdgeSwipe.current) {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = touchY;
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
+    if (isEdgeSwipe.current) {
+      touchEndX.current = e.touches[0].clientX;
+    }
   };
 
   const handleTouchEnd = () => {
+    if (!isEdgeSwipe.current) {
+      return;
+    }
+    
     const swipeDistance = touchStartX.current - touchEndX.current;
     const currentIndex = VIEWS.indexOf(view);
 
@@ -235,7 +253,9 @@ export default function Index() {
     
     // Reset
     touchStartX.current = 0;
+    touchStartY.current = 0;
     touchEndX.current = 0;
+    isEdgeSwipe.current = false;
   };
 
   const sendMessage = async (content: string) => {
