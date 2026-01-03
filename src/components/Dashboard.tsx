@@ -24,7 +24,7 @@ interface ProgressRingProps {
 }
 
 function ProgressRing({ percentage, label, spent, budget, icon, color, bgColor, delay = 0 }: ProgressRingProps) {
-  const radius = 40;
+  const radius = 28;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (Math.min(percentage, 100) / 100) * circumference;
   
@@ -39,22 +39,22 @@ function ProgressRing({ percentage, label, spent, budget, icon, color, bgColor, 
       className="flex flex-col items-center animate-fade-in"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="relative w-24 h-24 group">
+      <div className="relative w-16 h-16 group">
         <svg className="w-full h-full transform -rotate-90 drop-shadow-sm">
           <circle
-            cx="48"
-            cy="48"
+            cx="32"
+            cy="32"
             r={radius}
-            strokeWidth="6"
+            strokeWidth="4"
             stroke="currentColor"
             fill="transparent"
             className="text-muted/20"
           />
           <circle
-            cx="48"
-            cy="48"
+            cx="32"
+            cy="32"
             r={radius}
-            strokeWidth="6"
+            strokeWidth="4"
             stroke="currentColor"
             fill="transparent"
             strokeLinecap="round"
@@ -67,19 +67,19 @@ function ProgressRing({ percentage, label, spent, budget, icon, color, bgColor, 
           />
         </svg>
         <div className={cn(
-          "absolute inset-2 rounded-full flex flex-col items-center justify-center shadow-inner transition-transform duration-300 group-hover:scale-105",
+          "absolute inset-1.5 rounded-full flex flex-col items-center justify-center shadow-inner transition-transform duration-300 group-hover:scale-105",
           bgColor
         )}>
           {icon}
         </div>
       </div>
-      <div className="mt-3 text-center">
-        <div className="flex items-center justify-center gap-1">
-          <span className="font-bold text-lg tabular-nums">{percentage}%</span>
-          <span className="text-sm">{getStatusEmoji()}</span>
+      <div className="mt-2 text-center">
+        <div className="flex items-center justify-center gap-0.5">
+          <span className="font-bold text-sm tabular-nums">{percentage}%</span>
+          <span className="text-xs">{getStatusEmoji()}</span>
         </div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-[10px] text-muted-foreground tabular-nums">
           ${spent.toFixed(0)} / ${budget.toFixed(0)}
         </p>
       </div>
@@ -101,30 +101,30 @@ function StatCard({ label, value, subtext, icon, trend, className, delay = 0 }: 
   return (
     <Card 
       className={cn(
-        "overflow-hidden animate-fade-in shadow-premium hover:shadow-premium-lg transition-shadow duration-300",
+        "overflow-hidden animate-fade-in shadow-sm hover:shadow-md transition-shadow duration-300",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+            <div className="flex items-baseline gap-1">
+              <p className="text-lg font-bold tracking-tight tabular-nums">{value}</p>
               {trend && (
                 <span className={cn(
-                  "flex items-center text-xs font-medium",
+                  "flex items-center text-[10px] font-medium",
                   trend === 'up' && "text-budget-safe",
                   trend === 'down' && "text-budget-danger"
                 )}>
-                  {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {trend === 'up' ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
                 </span>
               )}
             </div>
-            {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
+            {subtext && <p className="text-[10px] text-muted-foreground">{subtext}</p>}
           </div>
-          <div className="p-2.5 rounded-xl bg-muted/30 backdrop-blur-sm">
+          <div className="p-2 rounded-lg bg-muted/30">
             {icon}
           </div>
         </div>
@@ -216,50 +216,50 @@ export function Dashboard() {
   const displayedExpenses = showAllExpenses ? expenses : expenses.slice(0, 5);
 
   return (
-    <div className="p-4 space-y-5 overflow-y-auto h-full pb-24">
+    <div className="px-3 py-2 space-y-3 overflow-y-auto h-full pb-20">
       {/* Header */}
       <div className="animate-fade-in">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-2xl font-bold tracking-tight">{monthName}</h2>
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground glass px-3 py-1.5 rounded-full shadow-sm">
-            <Calendar className="w-3.5 h-3.5" />
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold tracking-tight">{monthName}</h2>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground glass px-2 py-1 rounded-full">
+            <Calendar className="w-3 h-3" />
             <span>{daysLeft}d left</span>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">Your financial snapshot</p>
+        <p className="text-xs text-muted-foreground">Your financial snapshot</p>
       </div>
 
       {/* Main Balance Card */}
       <Card 
-        className="overflow-hidden bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground animate-fade-in shadow-premium-lg border-0 relative"
+        className="overflow-hidden bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground animate-fade-in shadow-md border-0 relative"
         style={{ animationDelay: '50ms' }}
       >
         <div className="absolute inset-0 gradient-shine pointer-events-none" />
-        <CardContent className="p-6 relative">
-          <div className="flex items-start justify-between mb-5">
+        <CardContent className="p-4 relative">
+          <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-sm opacity-80 mb-1 font-medium">Remaining Budget</p>
-              <p className="text-5xl font-bold tracking-tight">
+              <p className="text-xs opacity-80 mb-0.5 font-medium">Remaining Budget</p>
+              <p className="text-3xl font-bold tracking-tight">
                 ${remaining >= 0 ? remaining.toFixed(0) : '0'}
               </p>
               {remaining < 0 && (
-                <p className="text-sm opacity-80 mt-1">
+                <p className="text-xs opacity-80 mt-0.5">
                   Over by ${Math.abs(remaining).toFixed(0)}
                 </p>
               )}
             </div>
-            <div className="p-3.5 rounded-2xl bg-white/15 backdrop-blur-sm">
-              <Wallet className="w-7 h-7" />
+            <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-sm">
+              <Wallet className="w-5 h-5" />
             </div>
           </div>
           
           {/* Progress bar */}
-          <div className="space-y-2.5">
-            <div className="flex justify-between text-xs opacity-80 font-medium">
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-[10px] opacity-80 font-medium">
               <span>${totalSpent.toFixed(0)} spent</span>
               <span>${totalBudget.toFixed(0)} total</span>
             </div>
-            <div className="h-2.5 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+            <div className="h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
               <div 
                 className={cn(
                   "h-full rounded-full transition-all duration-1000 ease-out",
@@ -271,12 +271,12 @@ export function Dashboard() {
           </div>
 
           {/* Daily budget */}
-          <div className="mt-5 pt-4 border-t border-white/20 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 opacity-70" />
-              <span className="text-sm opacity-80 font-medium">Daily budget</span>
+          <div className="mt-3 pt-2.5 border-t border-white/20 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Target className="w-3 h-3 opacity-70" />
+              <span className="text-xs opacity-80 font-medium">Daily budget</span>
             </div>
-            <span className="font-bold text-lg">${dailyBudget.toFixed(0)}/day</span>
+            <span className="font-bold text-sm">${dailyBudget.toFixed(0)}/day</span>
           </div>
         </CardContent>
       </Card>
@@ -284,35 +284,35 @@ export function Dashboard() {
       {/* Insight Card */}
       <Card 
         className={cn(
-          "border-l-4 animate-fade-in shadow-premium",
+          "border-l-3 animate-fade-in shadow-sm",
           insight.type === 'positive' && "border-l-budget-safe bg-budget-safe/5",
           insight.type === 'warning' && "border-l-budget-warning bg-budget-warning/5",
           insight.type === 'neutral' && "border-l-primary bg-primary/5"
         )}
         style={{ animationDelay: '100ms' }}
       >
-        <CardContent className="py-4 px-4">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">{insight.emoji}</div>
+        <CardContent className="py-2.5 px-3">
+          <div className="flex items-center gap-2">
+            <div className="text-lg">{insight.emoji}</div>
             <div className="flex-1">
-              <p className="font-semibold">{insight.text}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="font-semibold text-sm">{insight.text}</p>
+              <p className="text-[10px] text-muted-foreground">
                 Day {today.getDate()} of {daysInMonth} · {overallPercentage}% spent
               </p>
             </div>
-            <Sparkles className="w-4 h-4 text-muted-foreground" />
+            <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
         </CardContent>
       </Card>
 
       {/* Category Progress Rings */}
-      <div className="grid grid-cols-3 gap-2 py-2">
+      <div className="grid grid-cols-3 gap-1 py-1">
         <ProgressRing
           percentage={percentages.needs}
           label="Needs"
           spent={spending.needs}
           budget={budgets.needs}
-          icon={<Home className="w-5 h-5 text-needs" />}
+          icon={<Home className="w-4 h-4 text-needs" />}
           color="text-needs"
           bgColor="bg-needs/10"
           delay={150}
@@ -322,7 +322,7 @@ export function Dashboard() {
           label="Wants"
           spent={spending.wants}
           budget={budgets.wants}
-          icon={<ShoppingBag className="w-5 h-5 text-wants" />}
+          icon={<ShoppingBag className="w-4 h-4 text-wants" />}
           color="text-wants"
           bgColor="bg-wants/10"
           delay={200}
@@ -332,7 +332,7 @@ export function Dashboard() {
           label="Savings"
           spent={spending.savings}
           budget={budgets.savings}
-          icon={<PiggyBank className="w-5 h-5 text-savings" />}
+          icon={<PiggyBank className="w-4 h-4 text-savings" />}
           color="text-savings"
           bgColor="bg-savings/10"
           delay={250}
@@ -340,109 +340,109 @@ export function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <StatCard
           label="Total Spent"
           value={`$${totalSpent.toFixed(0)}`}
           subtext={`${overallPercentage}% of budget`}
-          icon={<TrendingDown className="w-4 h-4 text-muted-foreground" />}
+          icon={<TrendingDown className="w-3.5 h-3.5 text-muted-foreground" />}
           delay={300}
         />
         <StatCard
           label="Monthly Income"
           value={`$${totalBudget.toFixed(0)}`}
           subtext="Set in settings"
-          icon={<TrendingUp className="w-4 h-4 text-muted-foreground" />}
+          icon={<TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />}
           delay={350}
         />
       </div>
 
       {/* Recent Transactions */}
       <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-lg">Recent Activity</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-sm">Recent Activity</h3>
           {expenses.length > 5 && (
             <button 
               onClick={() => setShowAllExpenses(!showAllExpenses)}
-              className="text-xs font-medium text-primary flex items-center gap-1 hover:underline transition-colors"
+              className="text-[10px] font-medium text-primary flex items-center gap-0.5 hover:underline transition-colors"
             >
-              {showAllExpenses ? 'Show less' : 'View all'} <ArrowRight className={cn("w-3 h-3 transition-transform duration-200", showAllExpenses && "rotate-90")} />
+              {showAllExpenses ? 'Show less' : 'View all'} <ArrowRight className={cn("w-2.5 h-2.5 transition-transform duration-200", showAllExpenses && "rotate-90")} />
             </button>
           )}
         </div>
         
         {expenses.length === 0 ? (
           <Card className="border-dashed border-2 shadow-none">
-            <CardContent className="py-10 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                <Wallet className="w-7 h-7 text-muted-foreground" />
+            <CardContent className="py-6 text-center">
+              <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                <Wallet className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="font-semibold mb-1">No expenses yet</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-semibold text-sm mb-0.5">No expenses yet</p>
+              <p className="text-xs text-muted-foreground">
                 Chat with FinBuddy to log your first expense
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {displayedExpenses.map((expense, index) => {
               const CategoryIcon = expense.category === 'needs' ? Home : expense.category === 'wants' ? ShoppingBag : PiggyBank;
               
               return (
                 <Card 
                   key={expense.id} 
-                  className="animate-fade-in group shadow-sm hover:shadow-premium transition-shadow duration-200"
+                  className="animate-fade-in group shadow-sm hover:shadow-md transition-shadow duration-200"
                   style={{ animationDelay: `${450 + index * 50}ms` }}
                 >
-                  <CardContent className="py-3.5 px-4">
-                    <div className="flex items-center gap-3">
+                  <CardContent className="py-2.5 px-3">
+                    <div className="flex items-center gap-2.5">
                       <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
                         expense.category === 'needs' && "bg-needs/10",
                         expense.category === 'wants' && "bg-wants/10",
                         expense.category === 'savings' && "bg-savings/10"
                       )}>
                         <CategoryIcon className={cn(
-                          "w-5 h-5",
+                          "w-4 h-4",
                           expense.category === 'needs' && "text-needs",
                           expense.category === 'wants' && "text-wants",
                           expense.category === 'savings' && "text-savings"
                         )} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
+                        <p className="font-medium text-sm truncate">
                           {expense.merchant || expense.description || 'Expense'}
                         </p>
-                        <p className="text-xs text-muted-foreground capitalize">
+                        <p className="text-[10px] text-muted-foreground capitalize">
                           {expense.category} · {new Date(expense.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <p className={cn(
-                          'font-bold tabular-nums',
+                          'font-bold text-sm tabular-nums',
                           expense.category === 'needs' && 'text-needs',
                           expense.category === 'wants' && 'text-wants',
                           expense.category === 'savings' && 'text-savings'
                         )}>
                           -${expense.amount.toFixed(2)}
                         </p>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-6 w-6"
                             onClick={() => openEditDialog(expense)}
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-3 h-3" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3 h-3" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
