@@ -480,9 +480,11 @@ export default function Index() {
       {/* Header */}
       <header className="glass border-b border-border/30 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-premium">
-            <span className="text-xl">💚</span>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="FinBuddy" 
+            className="w-10 h-10 rounded-xl shadow-premium"
+          />
           <div>
             <span className="font-bold text-lg tracking-tight">FinBuddy</span>
             <p className="text-[10px] text-muted-foreground -mt-0.5 tracking-wide uppercase">Smart Finance</p>
@@ -567,9 +569,11 @@ export default function Index() {
                       animate={{ opacity: 1, y: 0 }}
                       className="flex flex-col items-center justify-center h-full text-center px-6"
                     >
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 shadow-premium-lg">
-                        <span className="text-3xl">💚</span>
-                      </div>
+                      <img 
+                        src="/logo.png" 
+                        alt="FinBuddy" 
+                        className="w-16 h-16 rounded-2xl mb-4 shadow-premium-lg"
+                      />
                       <h3 className="text-lg font-semibold mb-2">Welcome to FinBuddy</h3>
                       <p className="text-sm text-muted-foreground max-w-xs">
                         Tell me about your expenses naturally, like "coffee $5 at Starbucks" and I'll help you track them!
@@ -598,9 +602,11 @@ export default function Index() {
                       animate={{ opacity: 1, y: 0 }}
                       className="flex items-center gap-2"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-premium">
-                        <span className="text-sm">💚</span>
-                      </div>
+                      <img 
+                        src="/logo.png" 
+                        alt="FinBuddy" 
+                        className="w-8 h-8 rounded-full shadow-premium"
+                      />
                       <div className="flex items-center gap-1.5 px-4 py-3 bg-card rounded-2xl rounded-bl-md shadow-premium border border-border/40">
                         <motion.div 
                           animate={{ scale: [1, 1.2, 1] }}

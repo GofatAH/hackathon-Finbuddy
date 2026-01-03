@@ -15,13 +15,13 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
+      includeAssets: ["favicon.png", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png", "logo.png"],
       manifest: {
         name: "FinBuddy - Smart Finance Tracker",
         short_name: "FinBuddy",
         description: "Your AI-powered personal finance buddy. Track expenses naturally with chat.",
-        theme_color: "#10b981",
-        background_color: "#0f172a",
+        theme_color: "#1a1a1a",
+        background_color: "#0a0a0a",
         display: "standalone",
         orientation: "portrait",
         scope: "/",

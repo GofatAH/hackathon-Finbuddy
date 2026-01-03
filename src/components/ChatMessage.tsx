@@ -38,9 +38,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
-          className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0 shadow-premium"
+          className="w-8 h-8 rounded-full overflow-hidden shrink-0 shadow-premium"
         >
-          <span className="text-sm">💚</span>
+          <img src="/logo.png" alt="FinBuddy" className="w-full h-full object-cover" />
         </motion.div>
       )}
       

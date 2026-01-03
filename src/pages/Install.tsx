@@ -64,14 +64,14 @@ export default function Install() {
         className="max-w-md w-full text-center space-y-8"
       >
         {/* App Icon */}
-        <motion.div
+        <motion.img
+          src="/logo.png"
+          alt="FinBuddy"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="mx-auto w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-premium-lg"
-        >
-          <span className="text-5xl">💚</span>
-        </motion.div>
+          className="mx-auto w-24 h-24 rounded-3xl shadow-premium-lg"
+        />
 
         {/* Title */}
         <div className="space-y-2">

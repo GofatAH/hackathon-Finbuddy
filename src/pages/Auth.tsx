@@ -83,15 +83,17 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-finbuddy-dark via-finbuddy-deep to-finbuddy-forest p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
       <div className="w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-finbuddy-mint mb-4">
-            <span className="text-3xl">💚</span>
-          </div>
-          <h1 className="text-3xl font-bold text-finbuddy-light">FinBuddy</h1>
-          <p className="text-finbuddy-mint mt-2">Your personal finance companion</p>
+          <img 
+            src="/logo.png" 
+            alt="FinBuddy" 
+            className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-premium-lg"
+          />
+          <h1 className="text-3xl font-bold">FinBuddy</h1>
+          <p className="text-muted-foreground mt-2">Your personal finance companion</p>
         </div>
 
         <Card className="border-0 shadow-2xl bg-card/95 backdrop-blur">
