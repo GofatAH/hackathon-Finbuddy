@@ -94,7 +94,7 @@ export default function Auth() {
   }));
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4 overflow-hidden relative">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-3 overflow-hidden relative">
       {/* Animated floating particles */}
       {particles.map((particle) => (
         <motion.div
@@ -120,10 +120,10 @@ export default function Auth() {
         />
       ))}
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-sm relative z-10">
         {/* Logo with bounce animation */}
         <motion.div 
-          className="text-center mb-8"
+          className="text-center mb-6"
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -131,7 +131,7 @@ export default function Auth() {
           <motion.img 
             src="/logo.png" 
             alt="FinBuddy" 
-            className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-premium-lg"
+            className="w-14 h-14 rounded-xl mx-auto mb-3 shadow-premium-lg"
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ 
@@ -147,7 +147,7 @@ export default function Auth() {
             }}
           />
           <motion.h1 
-            className="text-3xl font-bold"
+            className="text-2xl font-bold"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
@@ -155,7 +155,7 @@ export default function Auth() {
             FinBuddy
           </motion.h1>
           <motion.p 
-            className="text-muted-foreground mt-2"
+            className="text-sm text-muted-foreground mt-1"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
@@ -175,136 +175,104 @@ export default function Auth() {
           }}
         >
           <Card className="border-0 shadow-2xl bg-card/95 backdrop-blur">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl text-center">Welcome</CardTitle>
-              <CardDescription className="text-center">
-                Track expenses naturally, like texting a friend
+            <CardHeader className="space-y-1 pb-3 px-5 pt-5">
+              <CardTitle className="text-xl text-center">Welcome</CardTitle>
+              <CardDescription className="text-center text-sm">
+                Track expenses naturally
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-5 pb-5">
               <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="signin">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 mb-4 h-9">
+                  <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="signin">
                   <motion.form 
                     onSubmit={handleSignIn} 
-                    className="space-y-4"
+                    className="space-y-3"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <motion.div 
-                      className="space-y-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      <Label htmlFor="signin-email">Email</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signin-email" className="text-xs">Email</Label>
                       <Input
                         id="signin-email"
                         type="email"
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 transition-all duration-200 focus:scale-[1.02]"
+                        className="h-10 text-sm"
                       />
-                    </motion.div>
-                    <motion.div 
-                      className="space-y-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Label htmlFor="signin-password">Password</Label>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signin-password" className="text-xs">Password</Label>
                       <Input
                         id="signin-password"
                         type="password"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 transition-all duration-200 focus:scale-[1.02]"
+                        className="h-10 text-sm"
                       />
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full h-10 text-sm font-medium"
+                      disabled={isLoading}
                     >
-                      <Button 
-                        type="submit" 
-                        className="w-full h-12 text-lg font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          'Sign In'
-                        )}
-                      </Button>
-                    </motion.div>
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Sign In'
+                      )}
+                    </Button>
                   </motion.form>
                 </TabsContent>
                 
                 <TabsContent value="signup">
                   <motion.form 
                     onSubmit={handleSignUp} 
-                    className="space-y-4"
+                    className="space-y-3"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <motion.div 
-                      className="space-y-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      <Label htmlFor="signup-email">Email</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-email" className="text-xs">Email</Label>
                       <Input
                         id="signup-email"
                         type="email"
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 transition-all duration-200 focus:scale-[1.02]"
+                        className="h-10 text-sm"
                       />
-                    </motion.div>
-                    <motion.div 
-                      className="space-y-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Label htmlFor="signup-password">Password</Label>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-password" className="text-xs">Password</Label>
                       <Input
                         id="signup-password"
                         type="password"
                         placeholder="At least 6 characters"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 transition-all duration-200 focus:scale-[1.02]"
+                        className="h-10 text-sm"
                       />
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full h-10 text-sm font-medium"
+                      disabled={isLoading}
                     >
-                      <Button 
-                        type="submit" 
-                        className="w-full h-12 text-lg font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          'Create Account'
-                        )}
-                      </Button>
-                    </motion.div>
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Create Account'
+                      )}
+                    </Button>
                   </motion.form>
                 </TabsContent>
               </Tabs>
@@ -313,19 +281,12 @@ export default function Auth() {
         </motion.div>
 
         <motion.p 
-          className="text-center text-muted-foreground text-sm mt-6"
+          className="text-center text-muted-foreground text-xs mt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
         >
-          <motion.span
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            className="inline-block"
-          >
-            🔒
-          </motion.span>
-          {" "}Your data is encrypted and never shared
+          🔒 Your data is encrypted and never shared
         </motion.p>
       </div>
     </div>
