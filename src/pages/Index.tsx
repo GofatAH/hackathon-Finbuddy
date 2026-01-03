@@ -11,7 +11,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { Subscriptions } from '@/components/Subscriptions';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut, Plus } from 'lucide-react';
+import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut, Plus, ArrowDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +42,7 @@ export default function Index() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [chatLoaded, setChatLoaded] = useState(false);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
@@ -152,13 +153,34 @@ export default function Index() {
     }
   };
 
-  // Keep chat pinned to the latest message (no visible scrolling)
+  // Keep chat pinned to the latest message (no visible scrolling) - only when already at bottom
   useLayoutEffect(() => {
     if (view !== 'chat') return;
     const el = chatContainerRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    // Only auto-scroll if user is near the bottom (within 100px)
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    if (isNearBottom || !showJumpToLatest) {
+      el.scrollTop = el.scrollHeight;
+      setShowJumpToLatest(false);
+    }
   }, [view, messages.length, isStreaming]);
+
+  // Handle scroll to detect when user scrolls up
+  const handleChatScroll = useCallback(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowJumpToLatest(distanceFromBottom > 150);
+  }, []);
+
+  // Jump to latest message
+  const jumpToLatest = useCallback(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    setShowJumpToLatest(false);
+  }, []);
 
   // Swipe gesture handling
   const touchStartX = useRef<number>(0);
@@ -512,7 +534,8 @@ export default function Index() {
                       node.scrollTop = node.scrollHeight;
                     }
                   }}
-                  className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin bg-gradient-to-b from-background/50 to-background"
+                  onScroll={handleChatScroll}
+                  className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin bg-gradient-to-b from-background/50 to-background relative"
                 >
                   {messages.length === 0 && (
                     <motion.div 
@@ -575,6 +598,24 @@ export default function Index() {
                   )}
                   <div ref={messagesEndRef} className="h-2" />
                 </div>
+                
+                {/* Jump to Latest Button */}
+                <AnimatePresence>
+                  {showJumpToLatest && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                      onClick={jumpToLatest}
+                      className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full shadow-premium-lg hover:bg-primary/90 transition-colors z-10"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                      <span className="text-sm font-medium">Jump to latest</span>
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+                
                 <ChatInput onSend={sendMessage} disabled={isStreaming} />
               </div>
             )}
