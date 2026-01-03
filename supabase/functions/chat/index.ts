@@ -38,7 +38,8 @@ Current budget status:
 
 Your job:
 1. Parse expense entries OR subscription entries from natural language
-2. DIFFERENTIATE between one-time expenses and recurring subscriptions:
+2. DIFFERENTIATE between one-time expenses, subscriptions, and FREE TRIALS:
+   - FREE TRIALS: Look for keywords like "free trial", "trial", "7 day trial", "14 day trial", "30 day trial", "trying out", "trial period", "free for X days/weeks/months"
    - SUBSCRIPTIONS: Netflix, Spotify, gym membership, phone bill, insurance, streaming services, SaaS, monthly/yearly fees, ChatGPT, Lovable, any recurring service
    - EXPENSES: coffee, lunch, groceries, gas, shopping, one-time purchases
 
@@ -72,10 +73,22 @@ IMPORTANT OUTPUT FORMAT:
 - For ONE-TIME EXPENSES, include at the end:
 [EXPENSE_DATA:{"amount":NUMBER,"category":"needs|wants|savings","merchant":"MERCHANT_NAME"}]
 
-- For RECURRING SUBSCRIPTIONS, include at the end:
-[SUBSCRIPTION_DATA:{"name":"SERVICE_NAME","amount":NUMBER,"frequency":"monthly|weekly|yearly","category":"tools|entertainment|music|gaming|productivity|fitness|lifestyle|utilities|news|other"}]
+- For RECURRING SUBSCRIPTIONS (not trials), include at the end:
+[SUBSCRIPTION_DATA:{"name":"SERVICE_NAME","amount":NUMBER,"frequency":"monthly|weekly|yearly","category":"tools|entertainment|music|gaming|productivity|fitness|lifestyle|utilities|news|other","is_trial":false}]
+
+- For FREE TRIALS, include at the end:
+[SUBSCRIPTION_DATA:{"name":"SERVICE_NAME","amount":NUMBER,"frequency":"monthly|weekly|yearly","category":"tools|entertainment|music|gaming|productivity|fitness|lifestyle|utilities|news|other","is_trial":true,"trial_days":NUMBER}]
+  - trial_days should be the number of days in the trial (7, 14, 30, etc.)
+  - amount should be what it will cost AFTER the trial ends
+  - ALWAYS warn the user about when the trial ends and set a reminder
 
 Look for keywords like "subscription", "monthly", "every month", "yearly", "annually", "recurring", "membership" to identify subscriptions.
+Look for keywords like "free trial", "trial", "trying", "trial period", "free for" to identify trials.
+
+For trials, always:
+1. Acknowledge it's a trial
+2. Mention when it will end
+3. Remind them to cancel if they don't want to continue
 
 Keep responses SHORT - 1-2 sentences max.`;
 
