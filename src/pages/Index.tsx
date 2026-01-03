@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
@@ -32,6 +33,9 @@ export default function Index() {
   const { profile, getBudgetAmounts } = useProfile();
   const { addExpense, getSpendingByCategory, refetch: refetchExpenses } = useExpenses();
   const { toast } = useToast();
+  
+  // Check for upcoming subscription reminders
+  useSubscriptionReminders();
 
   // Get greeting message
   const getGreeting = useCallback(() => {
