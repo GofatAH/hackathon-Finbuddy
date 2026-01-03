@@ -213,7 +213,7 @@ export default function Index() {
       const decoder = new TextDecoder();
       let assistantContent = '';
       let expenseData: { amount: number; category: 'needs' | 'wants' | 'savings'; merchant?: string } | null = null;
-      let subscriptionData: { name: string; amount: number; frequency: 'monthly' | 'weekly' | 'yearly'; category: 'needs' | 'wants' } | null = null;
+      let subscriptionData: { name: string; amount: number; frequency: 'monthly' | 'weekly' | 'yearly'; category: 'tools' | 'entertainment' | 'music' | 'gaming' | 'productivity' | 'fitness' | 'lifestyle' | 'utilities' | 'news' | 'other' } | null = null;
 
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: '' }]);
 
