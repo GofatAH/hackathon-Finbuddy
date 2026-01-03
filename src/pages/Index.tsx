@@ -226,7 +226,7 @@ export default function Index() {
       const decoder = new TextDecoder();
       let assistantContent = '';
       let expenseData: { amount: number; category: 'needs' | 'wants' | 'savings'; merchant?: string } | null = null;
-      let subscriptionData: { name: string; amount: number; frequency: 'monthly' | 'weekly' | 'yearly'; category: 'tools' | 'entertainment' | 'music' | 'gaming' | 'productivity' | 'fitness' | 'lifestyle' | 'utilities' | 'news' | 'other' } | null = null;
+      let subscriptionData: { name: string; amount: number; frequency: 'monthly' | 'weekly' | 'yearly'; category: 'tools' | 'entertainment' | 'music' | 'gaming' | 'productivity' | 'fitness' | 'lifestyle' | 'utilities' | 'news' | 'other'; is_trial?: boolean; trial_days?: number } | null = null;
 
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: '' }]);
 
@@ -330,12 +330,23 @@ export default function Index() {
       // If subscription was parsed, add it to the database
       if (subscriptionData) {
         const nextChargeDate = new Date();
-        if (subscriptionData.frequency === 'monthly') {
-          nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
-        } else if (subscriptionData.frequency === 'weekly') {
-          nextChargeDate.setDate(nextChargeDate.getDate() + 7);
-        } else if (subscriptionData.frequency === 'yearly') {
-          nextChargeDate.setFullYear(nextChargeDate.getFullYear() + 1);
+        let trialEndDate: Date | null = null;
+        
+        // Handle free trials
+        if (subscriptionData.is_trial && subscriptionData.trial_days) {
+          trialEndDate = new Date();
+          trialEndDate.setDate(trialEndDate.getDate() + subscriptionData.trial_days);
+          // For trials, next charge is after trial ends
+          nextChargeDate.setDate(nextChargeDate.getDate() + subscriptionData.trial_days);
+        } else {
+          // Regular subscription - next charge based on frequency
+          if (subscriptionData.frequency === 'monthly') {
+            nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
+          } else if (subscriptionData.frequency === 'weekly') {
+            nextChargeDate.setDate(nextChargeDate.getDate() + 7);
+          } else if (subscriptionData.frequency === 'yearly') {
+            nextChargeDate.setFullYear(nextChargeDate.getFullYear() + 1);
+          }
         }
         
         await supabase.from('subscriptions').insert({
@@ -344,7 +355,9 @@ export default function Index() {
           amount: subscriptionData.amount,
           frequency: subscriptionData.frequency,
           category: subscriptionData.category,
-          next_charge_date: nextChargeDate.toISOString().split('T')[0]
+          next_charge_date: nextChargeDate.toISOString().split('T')[0],
+          is_trial: subscriptionData.is_trial || false,
+          trial_end_date: trialEndDate ? trialEndDate.toISOString().split('T')[0] : null
         });
       }
 
