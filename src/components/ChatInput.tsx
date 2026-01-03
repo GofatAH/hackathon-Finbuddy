@@ -1,15 +1,40 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Sparkles, Camera, Coffee, ShoppingCart, Utensils, Car, Film, Dumbbell, Home, Zap, X, Loader2, Receipt } from 'lucide-react';
+import { Send, Sparkles, Camera, Coffee, ShoppingCart, Utensils, Car, Film, Dumbbell, Home, Zap, X, Loader2, Receipt, Check, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   onReceiptScanned?: (data: { amount: number; merchant: string; category: string }) => void;
+}
+
+interface ReceiptData {
+  amount: number;
+  merchant: string;
+  items: { name: string; price: number }[];
+  category: string;
+  confidence: string;
 }
 
 const placeholders = [
@@ -39,6 +64,11 @@ export function ChatInput({ onSend, disabled, onReceiptScanned }: ChatInputProps
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const [editedAmount, setEditedAmount] = useState('');
+  const [editedMerchant, setEditedMerchant] = useState('');
+  const [editedCategory, setEditedCategory] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -165,34 +195,15 @@ export function ChatInput({ onSend, disabled, onReceiptScanned }: ChatInputProps
 
       const { amount, merchant, items, category, confidence } = result.data;
 
-      // Build a detailed message with items if available
-      let expenseMessage = `${merchant} $${amount}`;
-      if (items && items.length > 0) {
-        const itemNames = items.slice(0, 3).map((item: { name: string }) => item.name).join(', ');
-        expenseMessage = `${merchant} $${amount} - ${itemNames}${items.length > 3 ? '...' : ''}`;
-      }
+      // Store the receipt data and show confirmation dialog
+      setReceiptData({ amount, merchant, items: items || [], category, confidence });
+      setEditedAmount(amount.toString());
+      setEditedMerchant(merchant);
+      setEditedCategory(category);
+      setShowConfirmDialog(true);
       
-      // Build toast description with items
-      let toastDescription = `${merchant} - $${amount.toFixed(2)}`;
-      if (items && items.length > 0) {
-        toastDescription += `\nItems: ${items.map((item: { name: string; price: number }) => `${item.name} ($${item.price})`).join(', ')}`;
-      }
-      
-      toast({
-        title: confidence === 'high' ? '✅ Receipt scanned!' : '⚠️ Receipt scanned (low confidence)',
-        description: toastDescription + '\nLogging expense...',
-      });
-
-      // Notify parent if callback provided
-      if (onReceiptScanned) {
-        onReceiptScanned({ amount, merchant, category });
-      }
-
-      // Clear the image first
+      // Clear the image preview
       clearImage();
-
-      // Automatically send the message to log the expense
-      onSend(expenseMessage);
 
     } catch (error) {
       console.error('Receipt scan error:', error);
@@ -204,6 +215,46 @@ export function ChatInput({ onSend, disabled, onReceiptScanned }: ChatInputProps
     } finally {
       setIsScanning(false);
     }
+  };
+
+  const handleConfirmReceipt = () => {
+    if (!receiptData) return;
+
+    const amount = parseFloat(editedAmount) || receiptData.amount;
+    const merchant = editedMerchant || receiptData.merchant;
+    
+    // Build the expense message
+    let expenseMessage = `${merchant} $${amount}`;
+    if (receiptData.items && receiptData.items.length > 0) {
+      const itemNames = receiptData.items.slice(0, 3).map((item) => item.name).join(', ');
+      expenseMessage = `${merchant} $${amount} - ${itemNames}${receiptData.items.length > 3 ? '...' : ''}`;
+    }
+
+    // Notify parent if callback provided
+    if (onReceiptScanned) {
+      onReceiptScanned({ amount, merchant, category: editedCategory });
+    }
+
+    toast({
+      title: '✅ Logging expense...',
+      description: `${merchant} - $${amount.toFixed(2)}`,
+    });
+
+    // Send the message to log the expense
+    onSend(expenseMessage);
+
+    // Reset dialog state
+    setShowConfirmDialog(false);
+    setReceiptData(null);
+  };
+
+  const handleCancelReceipt = () => {
+    setShowConfirmDialog(false);
+    setReceiptData(null);
+    toast({
+      title: 'Receipt cancelled',
+      description: 'The expense was not logged.',
+    });
   };
 
   return (
@@ -422,6 +473,97 @@ export function ChatInput({ onSend, disabled, onReceiptScanned }: ChatInputProps
           )}
         </AnimatePresence>
       </motion.form>
+
+      {/* Receipt Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5" />
+              Confirm Receipt Details
+            </DialogTitle>
+            <DialogDescription>
+              {receiptData?.confidence === 'low' && (
+                <span className="text-warning font-medium">⚠️ Low confidence scan - please verify the details</span>
+              )}
+              {receiptData?.confidence === 'high' && (
+                <span className="text-success">✓ High confidence scan</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  value={editedAmount}
+                  onChange={(e) => setEditedAmount(e.target.value)}
+                  className="pl-7"
+                />
+              </div>
+            </div>
+
+            {/* Merchant */}
+            <div className="space-y-2">
+              <Label htmlFor="merchant">Merchant</Label>
+              <Input
+                id="merchant"
+                value={editedMerchant}
+                onChange={(e) => setEditedMerchant(e.target.value)}
+              />
+            </div>
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={editedCategory} onValueChange={setEditedCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="needs">🏠 Needs (essentials)</SelectItem>
+                  <SelectItem value="wants">🎉 Wants (fun stuff)</SelectItem>
+                  <SelectItem value="savings">💰 Savings</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Items list */}
+            {receiptData?.items && receiptData.items.length > 0 && (
+              <div className="space-y-2">
+                <Label>Items detected</Label>
+                <div className="bg-muted/50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                  <ul className="space-y-1 text-sm">
+                    {receiptData.items.map((item, index) => (
+                      <li key={index} className="flex justify-between">
+                        <span className="text-muted-foreground">{item.name}</span>
+                        <span className="font-medium">${item.price.toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCancelReceipt}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmReceipt}>
+              <Check className="w-4 h-4 mr-2" />
+              Log Expense
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
