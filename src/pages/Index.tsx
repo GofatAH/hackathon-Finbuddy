@@ -11,7 +11,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { Subscriptions } from '@/components/Subscriptions';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut, Plus, ArrowDown } from 'lucide-react';
+import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut, Plus, ArrowDown, User } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -467,18 +467,34 @@ export default function Index() {
           </div>
         </div>
         
-        {/* Page indicator dots */}
-        <div className="flex items-center gap-1">
-          {VIEWS.map((v) => (
-            <motion.div
-              key={v}
-              className={cn(
-                "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                view === v ? "bg-primary w-4" : "bg-muted-foreground/30"
-              )}
-              layoutId={view === v ? "page-dot" : undefined}
-            />
-          ))}
+        {/* Page indicator dots + Avatar */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            {VIEWS.map((v) => (
+              <motion.div
+                key={v}
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                  view === v ? "bg-primary w-4" : "bg-muted-foreground/30"
+                )}
+                layoutId={view === v ? "page-dot" : undefined}
+              />
+            ))}
+          </div>
+          
+          {/* User Avatar */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setView('settings')}
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-muted flex items-center justify-center overflow-hidden border-2 border-border/40 shadow-sm"
+          >
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-4 h-4 text-primary/60" />
+            )}
+          </motion.button>
         </div>
       </motion.header>
 

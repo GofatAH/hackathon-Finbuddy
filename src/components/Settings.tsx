@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { personalities, PersonalityType } from '@/lib/personalities';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Bell, BellOff, Loader2, Moon, Sun, LogOut, Shield, User, Palette, Sparkles, Pencil, X, Save, Camera } from 'lucide-react';
+import { Check, Bell, BellOff, Loader2, Moon, Sun, LogOut, Shield, User, Palette, Sparkles, Pencil, X, Save, Camera, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
@@ -160,6 +160,33 @@ export function Settings() {
     }
   };
 
+  const handleRemoveAvatar = async () => {
+    if (!user || !profile?.avatar_url) return;
+    
+    setUploadingAvatar(true);
+    try {
+      // Delete from storage
+      const filePath = `${user.id}/`;
+      const { data: files } = await supabase.storage.from('avatars').list(user.id);
+      
+      if (files && files.length > 0) {
+        await supabase.storage.from('avatars').remove(files.map(f => `${user.id}/${f.name}`));
+      }
+      
+      // Clear avatar URL in profile
+      const { error: updateError } = await updateProfile({ avatar_url: null });
+      if (updateError) throw updateError;
+      
+      await refetch();
+      toast({ title: 'Avatar removed' });
+    } catch (error) {
+      console.error('Avatar remove error:', error);
+      toast({ title: 'Failed to remove avatar', variant: 'destructive' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   return (
     <motion.div 
       className="px-3 py-2 space-y-3 overflow-y-auto h-full pb-20"
@@ -237,6 +264,16 @@ export function Settings() {
               <div className="flex-1">
                 <p className="font-semibold text-sm">{profile?.name || 'Not set'}</p>
                 <p className="text-[10px] text-muted-foreground">Tap camera to change photo</p>
+                {profile?.avatar_url && (
+                  <button
+                    onClick={handleRemoveAvatar}
+                    disabled={uploadingAvatar}
+                    className="flex items-center gap-1 mt-1 text-[10px] text-destructive hover:underline"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Remove photo
+                  </button>
+                )}
               </div>
             </div>
             
