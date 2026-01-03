@@ -1,16 +1,16 @@
 import { useProfile } from '@/hooks/useProfile';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { personalities, PersonalityType } from '@/lib/personalities';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Bell, BellOff, Loader2 } from 'lucide-react';
+import { Check, Bell, BellOff, Loader2, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
-
+import { useTheme } from 'next-themes';
 export function Settings() {
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const { 
     isSupported, 
     isSubscribed, 
@@ -62,6 +62,30 @@ export function Settings() {
             <span className="font-medium">
               {profile?.needs_percentage}/{profile?.wants_percentage}/{profile?.savings_percentage}
             </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Appearance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            Appearance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="font-medium">Dark Mode</p>
+              <p className="text-sm text-muted-foreground">
+                Switch between light and dark themes
+              </p>
+            </div>
+            <Switch
+              checked={theme === 'dark'}
+              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+            />
           </div>
         </CardContent>
       </Card>
