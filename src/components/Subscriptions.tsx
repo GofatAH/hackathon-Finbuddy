@@ -386,36 +386,37 @@ export function Subscriptions() {
   }) as SubscriptionCategory[];
 
   return (
-    <div className="p-4 space-y-6 overflow-y-auto h-full pb-24">
+    <div className="px-3 py-2 space-y-3 overflow-y-auto h-full pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Subscriptions</h2>
-          <p className="text-sm text-muted-foreground">{subscriptions.length} active</p>
+          <h2 className="text-lg font-bold tracking-tight">Subscriptions</h2>
+          <p className="text-xs text-muted-foreground">{subscriptions.length} active</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="rounded-full shadow-lg">
-              <Plus className="w-4 h-4 mr-1" /> Add New
+            <Button size="sm" className="rounded-full shadow-md h-8 text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1" /> Add
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-h-[85vh] overflow-y-auto mx-4">
             <DialogHeader>
-              <DialogTitle>Add Subscription</DialogTitle>
+              <DialogTitle className="text-base">Add Subscription</DialogTitle>
             </DialogHeader>
-            <form onSubmit={addSubscription} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Service Name</Label>
+            <form onSubmit={addSubscription} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="text-xs">Service Name</Label>
                 <Input
                   id="name"
                   placeholder="Netflix, ChatGPT, Spotify..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className="h-9 text-sm"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount ($)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="amount" className="text-xs">Amount ($)</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -423,12 +424,13 @@ export function Subscriptions() {
                     placeholder="15.99"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="frequency">Billing Cycle</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="frequency" className="text-xs">Billing Cycle</Label>
                   <Select value={frequency} onValueChange={(v) => setFrequency(v as 'monthly' | 'weekly' | 'yearly')}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
@@ -439,10 +441,10 @@ export function Subscriptions() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="category" className="text-xs">Category</Label>
                 <Select value={category} onValueChange={(v) => setCategory(v as SubscriptionCategory)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -451,8 +453,8 @@ export function Subscriptions() {
                       return (
                         <SelectItem key={key} value={key}>
                           <div className="flex items-center gap-2">
-                            <Icon className={cn("w-4 h-4", config.color)} />
-                            {config.label}
+                            <Icon className={cn("w-3.5 h-3.5", config.color)} />
+                            <span className="text-sm">{config.label}</span>
                           </div>
                         </SelectItem>
                       );
@@ -460,34 +462,36 @@ export function Subscriptions() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="next-charge">Next Charge Date</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="next-charge" className="text-xs">Next Charge Date</Label>
                 <Input
                   id="next-charge"
                   type="date"
                   value={nextCharge}
                   onChange={(e) => setNextCharge(e.target.value)}
+                  className="h-9 text-sm"
                 />
               </div>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div className="flex items-center justify-between p-2.5 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium">Free Trial?</span>
+                  <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                  <span className="text-xs font-medium">Free Trial?</span>
                 </div>
                 <Switch checked={isTrial} onCheckedChange={setIsTrial} />
               </div>
               {isTrial && (
-                <div className="space-y-2">
-                  <Label htmlFor="trial-end">Trial Ends On</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="trial-end" className="text-xs">Trial Ends On</Label>
                   <Input
                     id="trial-end"
                     type="date"
                     value={trialEndDate}
                     onChange={(e) => setTrialEndDate(e.target.value)}
+                    className="h-9 text-sm"
                   />
                 </div>
               )}
-              <Button type="submit" className="w-full">Add Subscription</Button>
+              <Button type="submit" className="w-full h-9 text-sm">Add Subscription</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -565,29 +569,29 @@ export function Subscriptions() {
       </Dialog>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs opacity-80 mb-1">Monthly Cost</p>
-            <p className="text-2xl font-bold">${getMonthlyTotal().toFixed(0)}</p>
-            <p className="text-xs opacity-60 mt-1">${getYearlyTotal().toFixed(0)}/year</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] opacity-80">Monthly Cost</p>
+            <p className="text-xl font-bold">${getMonthlyTotal().toFixed(0)}</p>
+            <p className="text-[10px] opacity-60">${getYearlyTotal().toFixed(0)}/year</p>
           </CardContent>
         </Card>
         <Card className={cn(
           "bg-gradient-to-br",
           upcomingCharges > 0 ? "from-amber-500 to-orange-500 text-white" : "from-muted to-muted"
         )}>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs opacity-80 mb-1">Next 7 Days</p>
-            <p className="text-2xl font-bold">${upcomingCharges.toFixed(0)}</p>
-            <p className="text-xs opacity-60 mt-1">{getUpcomingSubscriptions().length} charges</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] opacity-80">Next 7 Days</p>
+            <p className="text-xl font-bold">${upcomingCharges.toFixed(0)}</p>
+            <p className="text-[10px] opacity-60">{getUpcomingSubscriptions().length} charges</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Category Overview */}
       {sortedCategories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3">
           {sortedCategories.map(cat => {
             const config = CATEGORY_CONFIG[cat];
             const Icon = config.icon;
@@ -603,13 +607,13 @@ export function Subscriptions() {
               <div
                 key={cat}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-full shrink-0",
+                  "flex items-center gap-1.5 px-2 py-1.5 rounded-full shrink-0",
                   config.bgColor
                 )}
               >
-                <Icon className={cn("w-4 h-4", config.color)} />
-                <span className="text-sm font-medium">{count}</span>
-                <span className="text-xs text-muted-foreground">${total.toFixed(0)}/mo</span>
+                <Icon className={cn("w-3 h-3", config.color)} />
+                <span className="text-xs font-medium">{count}</span>
+                <span className="text-[10px] text-muted-foreground">${total.toFixed(0)}</span>
               </div>
             );
           })}
@@ -619,17 +623,17 @@ export function Subscriptions() {
       {/* Active Trials Section */}
       {activeTrials.length > 0 && (
         <Card className="border-yellow-500/50 bg-gradient-to-br from-yellow-500/10 to-orange-500/5">
-          <CardContent className="py-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-full bg-yellow-500/20">
-                <Timer className="w-5 h-5 text-yellow-600" />
+          <CardContent className="py-3 px-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 rounded-full bg-yellow-500/20">
+                <Timer className="w-4 h-4 text-yellow-600" />
               </div>
               <div>
-                <p className="font-semibold text-yellow-700 dark:text-yellow-400">Active Trials</p>
-                <p className="text-xs text-muted-foreground">{activeTrials.length} trial{activeTrials.length > 1 ? 's' : ''} to watch</p>
+                <p className="font-semibold text-sm text-yellow-700 dark:text-yellow-400">Active Trials</p>
+                <p className="text-[10px] text-muted-foreground">{activeTrials.length} trial{activeTrials.length > 1 ? 's' : ''}</p>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {activeTrials.map(trial => {
                 const daysLeft = getTrialDaysLeft(trial) || 0;
                 const trialConfig = CATEGORY_CONFIG[trial.category];
@@ -643,31 +647,30 @@ export function Subscriptions() {
                   <div 
                     key={trial.id} 
                     className={cn(
-                      "p-3 rounded-xl transition-all",
+                      "p-2.5 rounded-lg transition-all",
                       isUrgent 
                         ? "bg-red-500/10 border border-red-500/30" 
                         : "bg-background/50 border border-border/50"
                     )}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
                         trialConfig.bgColor
                       )}>
-                        <TrialIcon className={cn("w-5 h-5", trialConfig.color)} />
+                        <TrialIcon className={cn("w-4 h-4", trialConfig.color)} />
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold truncate">{trial.name}</h4>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-semibold text-sm truncate">{trial.name}</h4>
                           {isUrgent && (
-                            <Bell className="w-4 h-4 text-red-500 animate-pulse" />
+                            <Bell className="w-3 h-3 text-red-500 animate-pulse" />
                           )}
                         </div>
                         
-                        {/* Countdown Timer */}
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                             <div 
                               className={cn(
                                 "h-full rounded-full transition-all",
@@ -677,49 +680,45 @@ export function Subscriptions() {
                             />
                           </div>
                           <span className={cn(
-                            "text-sm font-bold shrink-0",
+                            "text-xs font-bold shrink-0",
                             isUrgent ? "text-red-500" : "text-yellow-600"
                           )}>
-                            {daysLeft === 0 ? 'Ends today!' : daysLeft === 1 ? '1 day left' : `${daysLeft} days`}
+                            {daysLeft === 0 ? 'Today!' : `${daysLeft}d`}
                           </span>
                         </div>
                       </div>
                       
                       <div className="text-right shrink-0">
-                        <p className="text-xs text-muted-foreground">Then</p>
-                        <p className="font-bold text-foreground">
-                          ${trial.amount.toFixed(2)}/{trial.frequency === 'monthly' ? 'mo' : trial.frequency === 'weekly' ? 'wk' : 'yr'}
+                        <p className="text-[10px] text-muted-foreground">Then</p>
+                        <p className="font-bold text-xs">
+                          ${trial.amount.toFixed(0)}/{trial.frequency === 'monthly' ? 'mo' : trial.frequency === 'weekly' ? 'wk' : 'yr'}
                         </p>
                       </div>
                       
-                      <div className="flex flex-col gap-1 shrink-0">
+                      <div className="flex gap-1 shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-xs bg-green-500/10 border-green-500/30 text-green-600 hover:bg-green-500/20 hover:text-green-700"
+                          className="h-7 px-2 text-[10px] bg-green-500/10 border-green-500/30 text-green-600 hover:bg-green-500/20"
                           onClick={() => openConvertDialog(trial)}
-                          title="Keep subscription"
                         >
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Keep
+                          <CheckCircle2 className="w-3 h-3" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                          className="h-7 px-2 text-muted-foreground hover:text-destructive"
                           onClick={() => deleteSubscription(trial.id)}
-                          title="Cancel trial"
                         >
-                          <Trash2 className="w-3 h-3 mr-1" />
-                          Cancel
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
                     
                     {isUrgent && (
-                      <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Decide now: Keep it or cancel to avoid ${trial.amount.toFixed(2)} charge
+                      <p className="text-[10px] text-red-500 mt-1.5 flex items-center gap-1">
+                        <AlertTriangle className="w-2.5 h-2.5" />
+                        Decide now to avoid ${trial.amount.toFixed(2)} charge
                       </p>
                     )}
                   </div>
@@ -733,16 +732,15 @@ export function Subscriptions() {
       {/* Zombie Warning */}
       {unusedSavings > 0 && (
         <Card className="border-warning/50 bg-warning/10">
-          <CardContent className="py-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-warning/20">
-                <AlertTriangle className="w-5 h-5 text-warning" />
+          <CardContent className="py-2.5 px-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-full bg-warning/20">
+                <AlertTriangle className="w-4 h-4 text-warning" />
               </div>
-              <div>
-                <p className="font-semibold text-warning">Zombie Subscriptions</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  You have {getUnusedSubscriptions().length} unused subscriptions. 
-                  Cancel to save <span className="font-bold text-warning">${unusedSavings.toFixed(0)}/mo</span>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-warning">Zombie Subscriptions</p>
+                <p className="text-xs text-muted-foreground">
+                  {getUnusedSubscriptions().length} unused · Save <span className="font-bold text-warning">${unusedSavings.toFixed(0)}/mo</span>
                 </p>
               </div>
             </div>
@@ -752,37 +750,37 @@ export function Subscriptions() {
 
       {/* Loading/Empty State */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground mt-3">Loading subscriptions...</p>
+        <div className="text-center py-8">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs text-muted-foreground mt-2">Loading...</p>
         </div>
       ) : subscriptions.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <Tv className="w-8 h-8 text-muted-foreground" />
+          <CardContent className="py-8 text-center">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+              <Tv className="w-6 h-6 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold text-lg mb-1">No subscriptions yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Track your recurring payments to avoid surprises
+            <h3 className="font-semibold text-sm mb-1">No subscriptions yet</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Track recurring payments
             </p>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Add First Subscription
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> Add First
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {sortedCategories.map(cat => {
             const config = CATEGORY_CONFIG[cat];
             const Icon = config.icon;
             const subs = groupedSubscriptions[cat];
             
             return (
-              <div key={cat} className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Icon className={cn("w-4 h-4", config.color)} />
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+              <div key={cat} className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Icon className={cn("w-3.5 h-3.5", config.color)} />
+                  <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">
                     {config.label} ({subs.length})
                   </h3>
                 </div>
@@ -831,45 +829,45 @@ function SubscriptionCard({ sub, config, onDelete, onMarkUsed, getDaysUntilCharg
       isZombie && 'border-warning/50 bg-warning/5',
       sub.is_trial && 'border-yellow-500/50 bg-yellow-500/5'
     )}>
-      <CardContent className="py-4 px-4">
-        <div className="flex items-center gap-3">
+      <CardContent className="py-2.5 px-3">
+        <div className="flex items-center gap-2">
           {/* Icon */}
           <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
             config.bgColor
           )}>
-            <Icon className={cn("w-5 h-5", config.color)} />
+            <Icon className={cn("w-4 h-4", config.color)} />
           </div>
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold truncate">{sub.name}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-semibold text-sm truncate">{sub.name}</h3>
               {sub.is_trial && trialDaysLeft !== null && trialDaysLeft > 0 && (
-                <span className="text-xs bg-yellow-500/20 text-yellow-600 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-                  <Zap className="w-3 h-3" />
-                  {trialDaysLeft}d trial
+                <span className="text-[10px] bg-yellow-500/20 text-yellow-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0">
+                  <Zap className="w-2.5 h-2.5" />
+                  {trialDaysLeft}d
                 </span>
               )}
               {isZombie && (
-                <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded-full shrink-0">
-                  💤 Unused
+                <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded-full shrink-0">
+                  💤
                 </span>
               )}
               {isUpcoming && !sub.is_trial && (
-                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full shrink-0">
+                <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full shrink-0">
                   Soon
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
+            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-0.5">
+                <Calendar className="w-2.5 h-2.5" />
                 {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : daysUntil < 0 ? 'Past due' : `${daysUntil}d`}
               </span>
               {daysSinceUsed !== null && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                <span className="flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
                   {daysSinceUsed === 0 ? 'Used today' : `${daysSinceUsed}d ago`}
                 </span>
               )}
@@ -877,33 +875,31 @@ function SubscriptionCard({ sub, config, onDelete, onMarkUsed, getDaysUntilCharg
           </div>
 
           {/* Price & Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <div className="text-right">
-              <p className={cn("font-bold", sub.is_trial && "line-through text-muted-foreground")}>
-                ${sub.amount.toFixed(2)}
+              <p className={cn("font-bold text-sm", sub.is_trial && "line-through text-muted-foreground")}>
+                ${sub.amount.toFixed(0)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground">
                 /{sub.frequency === 'monthly' ? 'mo' : sub.frequency === 'weekly' ? 'wk' : 'yr'}
               </p>
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex gap-0.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                className="h-7 w-7 text-muted-foreground hover:text-primary"
                 onClick={() => onMarkUsed(sub.id)}
-                title="Mark as used"
               >
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-3.5 h-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 onClick={() => onDelete(sub.id)}
-                title="Delete"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
