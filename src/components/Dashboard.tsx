@@ -1,8 +1,16 @@
+import { useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
-import { useExpenses } from '@/hooks/useExpenses';
+import { useExpenses, Expense } from '@/hooks/useExpenses';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Wallet, Target, Calendar, ArrowRight, Sparkles, ShoppingBag, PiggyBank, Home } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Target, Calendar, ArrowRight, Sparkles, ShoppingBag, PiggyBank, Home, Pencil, Trash2 } from 'lucide-react';
 
 interface ProgressRingProps {
   percentage: number;
@@ -127,7 +135,14 @@ function StatCard({ label, value, subtext, icon, trend, className, delay = 0 }: 
 
 export function Dashboard() {
   const { profile, getBudgetAmounts } = useProfile();
-  const { expenses, getSpendingByCategory } = useExpenses();
+  const { expenses, getSpendingByCategory, updateExpense, deleteExpense } = useExpenses();
+  const { toast } = useToast();
+  
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editMerchant, setEditMerchant] = useState('');
+  const [editCategory, setEditCategory] = useState<'needs' | 'wants' | 'savings'>('wants');
+  const [showAllExpenses, setShowAllExpenses] = useState(false);
   
   const budgets = getBudgetAmounts();
   const spending = getSpendingByCategory();
@@ -164,6 +179,41 @@ export function Dashboard() {
   };
 
   const insight = getInsight();
+
+  const openEditDialog = (expense: Expense) => {
+    setEditingExpense(expense);
+    setEditAmount(expense.amount.toString());
+    setEditMerchant(expense.merchant || expense.description || '');
+    setEditCategory(expense.category);
+  };
+
+  const handleUpdateExpense = async () => {
+    if (!editingExpense) return;
+    
+    const result = await updateExpense(editingExpense.id, {
+      amount: parseFloat(editAmount),
+      merchant: editMerchant || null,
+      category: editCategory
+    });
+    
+    if (result.error) {
+      toast({ title: 'Failed to update expense', variant: 'destructive' });
+    } else {
+      toast({ title: 'Expense updated! ✓' });
+      setEditingExpense(null);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    const result = await deleteExpense(id);
+    if (result.error) {
+      toast({ title: 'Failed to delete expense', variant: 'destructive' });
+    } else {
+      toast({ title: 'Expense deleted' });
+    }
+  };
+
+  const displayedExpenses = showAllExpenses ? expenses : expenses.slice(0, 5);
 
   return (
     <div className="p-4 space-y-5 overflow-y-auto h-full pb-24">
@@ -311,8 +361,11 @@ export function Dashboard() {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Recent Activity</h3>
           {expenses.length > 5 && (
-            <button className="text-xs text-primary flex items-center gap-1 hover:underline">
-              View all <ArrowRight className="w-3 h-3" />
+            <button 
+              onClick={() => setShowAllExpenses(!showAllExpenses)}
+              className="text-xs text-primary flex items-center gap-1 hover:underline"
+            >
+              {showAllExpenses ? 'Show less' : 'View all'} <ArrowRight className={cn("w-3 h-3 transition-transform", showAllExpenses && "rotate-90")} />
             </button>
           )}
         </div>
@@ -331,13 +384,13 @@ export function Dashboard() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {expenses.slice(0, 5).map((expense, index) => {
+            {displayedExpenses.map((expense, index) => {
               const CategoryIcon = expense.category === 'needs' ? Home : expense.category === 'wants' ? ShoppingBag : PiggyBank;
               
               return (
                 <Card 
                   key={expense.id} 
-                  className="animate-fade-in"
+                  className="animate-fade-in group"
                   style={{ animationDelay: `${450 + index * 50}ms` }}
                 >
                   <CardContent className="py-3 px-4">
@@ -363,14 +416,54 @@ export function Dashboard() {
                           {expense.category} · {new Date(expense.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
-                      <p className={cn(
-                        'font-bold tabular-nums',
-                        expense.category === 'needs' && 'text-needs',
-                        expense.category === 'wants' && 'text-wants',
-                        expense.category === 'savings' && 'text-savings'
-                      )}>
-                        -${expense.amount.toFixed(2)}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className={cn(
+                          'font-bold tabular-nums',
+                          expense.category === 'needs' && 'text-needs',
+                          expense.category === 'wants' && 'text-wants',
+                          expense.category === 'savings' && 'text-savings'
+                        )}>
+                          -${expense.amount.toFixed(2)}
+                        </p>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => openEditDialog(expense)}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete expense?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete this ${expense.amount.toFixed(2)} expense.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteExpense(expense.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -379,6 +472,54 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Edit Expense Dialog */}
+      <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-merchant">Description</Label>
+              <Input
+                id="edit-merchant"
+                value={editMerchant}
+                onChange={(e) => setEditMerchant(e.target.value)}
+                placeholder="Coffee, Groceries..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-amount">Amount ($)</Label>
+                <Input
+                  id="edit-amount"
+                  type="number"
+                  step="0.01"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select value={editCategory} onValueChange={(v) => setEditCategory(v as 'needs' | 'wants' | 'savings')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="needs">Needs</SelectItem>
+                    <SelectItem value="wants">Wants</SelectItem>
+                    <SelectItem value="savings">Savings</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button onClick={handleUpdateExpense} className="w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
