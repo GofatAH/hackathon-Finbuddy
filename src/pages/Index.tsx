@@ -182,6 +182,7 @@ export default function Index() {
       const decoder = new TextDecoder();
       let assistantContent = '';
       let expenseData: { amount: number; category: 'needs' | 'wants' | 'savings'; merchant?: string } | null = null;
+      let subscriptionData: { name: string; amount: number; frequency: 'monthly' | 'weekly' | 'yearly'; category: 'needs' | 'wants' } | null = null;
 
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: '' }]);
 
@@ -238,20 +239,36 @@ export default function Index() {
         if (expenseMatch) {
           try {
             expenseData = JSON.parse(expenseMatch[1]);
-            // Clean the marker from displayed message
             assistantContent = assistantContent.replace(/\[EXPENSE_DATA:.*?\]/, '').trim();
-            setMessages(prev => {
-              const newMessages = [...prev];
-              const lastMessage = newMessages[newMessages.length - 1];
-              if (lastMessage.role === 'assistant') {
-                lastMessage.content = assistantContent;
-              }
-              return newMessages;
-            });
           } catch (e) {
             console.error('Failed to parse expense data:', e);
           }
         }
+      }
+
+      // Parse subscription from text
+      if (!subscriptionData) {
+        const subMatch = assistantContent.match(/\[SUBSCRIPTION_DATA:(.*?)\]/);
+        if (subMatch) {
+          try {
+            subscriptionData = JSON.parse(subMatch[1]);
+            assistantContent = assistantContent.replace(/\[SUBSCRIPTION_DATA:.*?\]/, '').trim();
+          } catch (e) {
+            console.error('Failed to parse subscription data:', e);
+          }
+        }
+      }
+
+      // Update displayed message without markers
+      if (assistantContent) {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.role === 'assistant') {
+            lastMessage.content = assistantContent;
+          }
+          return newMessages;
+        });
       }
 
       // If expense was parsed, add it to the database
@@ -266,10 +283,32 @@ export default function Index() {
         }
       }
 
+      // If subscription was parsed, add it to the database
+      if (subscriptionData) {
+        const nextChargeDate = new Date();
+        if (subscriptionData.frequency === 'monthly') {
+          nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
+        } else if (subscriptionData.frequency === 'weekly') {
+          nextChargeDate.setDate(nextChargeDate.getDate() + 7);
+        } else if (subscriptionData.frequency === 'yearly') {
+          nextChargeDate.setFullYear(nextChargeDate.getFullYear() + 1);
+        }
+        
+        await supabase.from('subscriptions').insert({
+          user_id: user?.id,
+          name: subscriptionData.name,
+          amount: subscriptionData.amount,
+          frequency: subscriptionData.frequency,
+          category: subscriptionData.category,
+          next_charge_date: nextChargeDate.toISOString().split('T')[0]
+        });
+      }
+
       // Save assistant message to database
       if (assistantContent) {
         saveMessage('assistant', assistantContent);
       }
+
 
     } catch (error) {
       console.error('Chat error:', error);
