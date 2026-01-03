@@ -1,14 +1,24 @@
 import { useProfile } from '@/hooks/useProfile';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { personalities, PersonalityType } from '@/lib/personalities';
 import { useToast } from '@/hooks/use-toast';
-import { Check } from 'lucide-react';
+import { Check, Bell, BellOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 export function Settings() {
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
+  const { 
+    isSupported, 
+    isSubscribed, 
+    permission, 
+    loading: pushLoading, 
+    subscribe, 
+    unsubscribe 
+  } = usePushNotifications();
 
   const handlePersonalityChange = async (personality: PersonalityType) => {
     const { error } = await updateProfile({ personality });
@@ -18,6 +28,14 @@ export function Settings() {
     } else {
       const p = personalities.find(p => p.id === personality);
       toast({ title: `Switched to ${p?.name}! ${p?.emoji}` });
+    }
+  };
+
+  const handleNotificationToggle = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+    } else {
+      await subscribe();
     }
   };
 
@@ -45,6 +63,65 @@ export function Settings() {
               {profile?.needs_percentage}/{profile?.wants_percentage}/{profile?.savings_percentage}
             </span>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Push Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isSupported ? (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="font-medium">Push Notifications</p>
+                  <p className="text-sm text-muted-foreground">
+                    Get alerts for upcoming charges and budget warnings
+                  </p>
+                </div>
+                {pushLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <Switch
+                    checked={isSubscribed}
+                    onCheckedChange={handleNotificationToggle}
+                    disabled={permission === 'denied'}
+                  />
+                )}
+              </div>
+              {permission === 'denied' && (
+                <p className="text-sm text-destructive">
+                  Notifications are blocked. Please enable them in your browser settings.
+                </p>
+              )}
+              {isSubscribed && (
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary" />
+                    <span>Subscription charge reminders (3 days before)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary" />
+                    <span>Budget warnings (90%+ spent)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary" />
+                    <span>Budget exceeded alerts</span>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BellOff className="w-4 h-4" />
+              <span>Push notifications are not supported in this browser</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
