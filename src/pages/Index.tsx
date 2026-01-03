@@ -206,57 +206,6 @@ export default function Index() {
     lastSeenMessageCount.current = messages.length;
   }, [messages.length]);
 
-  // Swipe gesture handling - only from top or bottom edges
-  const touchStartX = useRef<number>(0);
-  const touchStartY = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
-  const isEdgeSwipe = useRef<boolean>(false);
-  const minSwipeDistance = 50;
-  const edgeThreshold = 80; // px from top or bottom to trigger swipe
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touchY = e.touches[0].clientY;
-    const windowHeight = window.innerHeight;
-    
-    // Only enable swipe if touch starts in top or bottom edge zone
-    isEdgeSwipe.current = touchY < edgeThreshold || touchY > windowHeight - edgeThreshold;
-    
-    if (isEdgeSwipe.current) {
-      touchStartX.current = e.touches[0].clientX;
-      touchStartY.current = touchY;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (isEdgeSwipe.current) {
-      touchEndX.current = e.touches[0].clientX;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isEdgeSwipe.current) {
-      return;
-    }
-    
-    const swipeDistance = touchStartX.current - touchEndX.current;
-    const currentIndex = VIEWS.indexOf(view);
-
-    if (Math.abs(swipeDistance) > minSwipeDistance) {
-      if (swipeDistance > 0 && currentIndex < VIEWS.length - 1) {
-        // Swipe left - go to next page
-        setView(VIEWS[currentIndex + 1]);
-      } else if (swipeDistance < 0 && currentIndex > 0) {
-        // Swipe right - go to previous page
-        setView(VIEWS[currentIndex - 1]);
-      }
-    }
-    
-    // Reset
-    touchStartX.current = 0;
-    touchStartY.current = 0;
-    touchEndX.current = 0;
-    isEdgeSwipe.current = false;
-  };
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || isStreaming) return;
@@ -534,12 +483,7 @@ export default function Index() {
       </motion.header>
 
       {/* Main Content */}
-      <main 
-        className="flex-1 overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+      <main className="flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={view}
