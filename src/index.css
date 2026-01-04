@@ -342,3 +342,36 @@ input:focus, textarea:focus {
 .animate-skeleton {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
+
+/* Prevent horizontal overflow on chat */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Smooth scrolling and better performance */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* GPU acceleration for smoother animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Prevent body overflow */
+body {
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
