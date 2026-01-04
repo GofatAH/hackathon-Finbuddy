@@ -470,26 +470,52 @@ export function Settings() {
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="space-y-1.5 pt-2 border-t border-border/50"
+                    className="space-y-2 pt-2 border-t border-border/50"
                   >
-                    {[
-                      'Subscription reminders (3 days before)',
-                      'Budget warnings (90%+ spent)',
-                      'Budget exceeded alerts'
-                    ].map((text, i) => (
-                      <motion.div 
-                        key={text}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
-                      >
-                        <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Check className="w-2.5 h-2.5 text-primary" />
-                        </div>
-                        <span>{text}</span>
-                      </motion.div>
-                    ))}
+                    <div className="space-y-1.5">
+                      {[
+                        'Subscription reminders (3 days before)',
+                        'Budget warnings (90%+ spent)',
+                        'Budget exceeded alerts'
+                      ].map((text, i) => (
+                        <motion.div 
+                          key={text}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                          className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                        >
+                          <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 text-primary" />
+                          </div>
+                          <span>{text}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 text-xs mt-2"
+                      onClick={async () => {
+                        try {
+                          const response = await supabase.functions.invoke('send-push-notification', {
+                            body: {
+                              title: 'Test Notification 🔔',
+                              body: 'Push notifications are working! You\'ll receive alerts for subscriptions and budget warnings.',
+                              userId: user?.id
+                            }
+                          });
+                          if (response.error) throw response.error;
+                          toast({ title: 'Test notification sent! Check your device.' });
+                        } catch (error) {
+                          console.error('Test notification error:', error);
+                          toast({ title: 'Failed to send test notification', variant: 'destructive' });
+                        }
+                      }}
+                    >
+                      <Bell className="w-3 h-3 mr-1.5" />
+                      Send Test Notification
+                    </Button>
                   </motion.div>
                 )}
               </>
