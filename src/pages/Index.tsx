@@ -73,12 +73,14 @@ export default function Index() {
     return greetings[personality];
   }, [profile?.name, profile?.personality]);
 
-  // Load chat history from database
+  // Load chat history from database - reset on mount
   useEffect(() => {
-    if (user && !chatLoaded) {
+    if (user) {
+      setChatLoaded(false);
+      setMessages([]);
       loadChatHistory();
     }
-  }, [user, chatLoaded]);
+  }, [user?.id]);
 
   const loadChatHistory = async () => {
     if (!user) return;
@@ -155,16 +157,18 @@ export default function Index() {
     }
   };
 
-  // Keep chat pinned to the latest message (no visible scrolling) - only when already at bottom
+  // Track if user has manually scrolled up
+  const userScrolledUp = useRef(false);
+
+  // Keep chat pinned to the latest message - only when user hasn't scrolled up
   useLayoutEffect(() => {
     if (view !== 'chat') return;
     const el = chatContainerRef.current;
     if (!el) return;
-    // Only auto-scroll if user is near the bottom (within 100px)
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    if (isNearBottom || !showJumpToLatest) {
+    
+    // Only auto-scroll if user hasn't manually scrolled up
+    if (!userScrolledUp.current) {
       el.scrollTop = el.scrollHeight;
-      setShowJumpToLatest(false);
     }
   }, [view, messages.length, isStreaming]);
 
@@ -175,15 +179,16 @@ export default function Index() {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     const isScrolledUp = distanceFromBottom > 150;
     
+    // Update scroll tracking ref
+    userScrolledUp.current = isScrolledUp;
+    
     if (isScrolledUp && !showJumpToLatest) {
-      // User just scrolled up - record current message count
       lastSeenMessageCount.current = messages.length;
     }
     
     setShowJumpToLatest(isScrolledUp);
     
     if (!isScrolledUp) {
-      // User is at bottom - reset unread count
       setUnreadCount(0);
       lastSeenMessageCount.current = messages.length;
     }
@@ -200,6 +205,7 @@ export default function Index() {
   const jumpToLatest = useCallback(() => {
     const el = chatContainerRef.current;
     if (!el) return;
+    userScrolledUp.current = false;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     setShowJumpToLatest(false);
     setUnreadCount(0);
@@ -548,14 +554,9 @@ export default function Index() {
                 
                 {/* Chat messages - scrollable area */}
                 <div 
-                  ref={(node) => {
-                    chatContainerRef.current = node;
-                    if (node && view === 'chat') {
-                      node.scrollTop = node.scrollHeight;
-                    }
-                  }}
+                  ref={chatContainerRef}
                   onScroll={handleChatScroll}
-                  className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3 scrollbar-thin bg-gradient-to-b from-background/50 to-background relative"
+                  className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-3 scrollbar-thin bg-gradient-to-b from-background/50 to-background relative"
                 >
                   {messages.length === 0 && (
                     <motion.div 

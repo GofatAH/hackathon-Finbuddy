@@ -25,13 +25,18 @@ export function usePushNotifications() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Check if push notifications are supported
+  // Check if push notifications are supported and register service worker
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
     
     if (supported) {
       setPermission(Notification.permission);
+      
+      // Register our custom service worker for push
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.error('Service worker registration failed:', err);
+      });
     }
   }, []);
 

@@ -48,7 +48,7 @@ export function ChatMessage({ message, userAvatarUrl }: ChatMessageProps) {
         </motion.div>
       )}
       
-      <div className="flex flex-col gap-1 max-w-[80%]">
+      <div className="flex flex-col gap-1 max-w-[80%] min-w-0">
         <div 
           className="relative"
           onMouseEnter={() => setShowReactions(true)}
@@ -64,7 +64,7 @@ export function ChatMessage({ message, userAvatarUrl }: ChatMessageProps) {
                 : 'bg-card text-card-foreground rounded-bl-lg shadow-premium border border-border/40'
             )}
           >
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">{message.content}</p>
             
             {/* Subtle shine effect on user messages */}
             {isUser && (

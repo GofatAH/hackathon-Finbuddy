@@ -15,37 +15,42 @@ interface PushPayload {
   userId?: string;
 }
 
-// Web Push implementation using Deno
-async function sendWebPush(subscription: { endpoint: string; p256dh: string; auth: string }, payload: string) {
-  const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')!;
-  const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!;
-  
-  // Import web-push compatible implementation
-  const encoder = new TextEncoder();
-  
-  // For now, we'll use a simpler approach - sending to the push service
-  // In production, you'd want a full web-push implementation
-  console.log('Sending push to endpoint:', subscription.endpoint);
-  console.log('Payload:', payload);
-  
-  // Basic push - in production use proper web-push library
+// Web Push implementation using web-push protocol
+async function sendWebPush(
+  subscription: { endpoint: string; p256dh: string; auth: string },
+  payload: string,
+  vapidPublicKey: string,
+  vapidPrivateKey: string
+): Promise<boolean> {
   try {
-    const response = await fetch(subscription.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TTL': '86400',
-      },
-      body: payload,
-    });
+    // Import the web-push module for Deno
+    const webPush = await import("https://esm.sh/web-push@3.6.7");
     
-    if (!response.ok) {
-      console.error('Push failed:', response.status, await response.text());
+    webPush.setVapidDetails(
+      'mailto:noreply@finbuddy.app',
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+
+    const pushSubscription = {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: subscription.p256dh,
+        auth: subscription.auth
+      }
+    };
+
+    await webPush.sendNotification(pushSubscription, payload);
+    console.log('Push notification sent successfully');
+    return true;
+  } catch (error: unknown) {
+    console.error('Push error:', error);
+    // Check if subscription is expired/invalid
+    const err = error as { statusCode?: number };
+    if (err.statusCode === 410 || err.statusCode === 404) {
+      console.log('Subscription is expired or invalid');
       return false;
     }
-    return true;
-  } catch (error) {
-    console.error('Push error:', error);
     return false;
   }
 }
@@ -57,6 +62,17 @@ serve(async (req) => {
   }
 
   try {
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+    
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      console.error('VAPID keys not configured');
+      return new Response(
+        JSON.stringify({ error: 'VAPID keys not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -104,7 +120,9 @@ serve(async (req) => {
     for (const sub of subscriptions) {
       const success = await sendWebPush(
         { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-        payload
+        payload,
+        vapidPublicKey,
+        vapidPrivateKey
       );
       
       if (success) {
