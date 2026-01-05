@@ -4,12 +4,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
+import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
 import { Dashboard } from '@/components/Dashboard';
 import { Subscriptions } from '@/components/Subscriptions';
 import { Settings } from '@/components/Settings';
+import { NotificationCenter } from '@/components/NotificationCenter';
+import { NotificationPopup } from '@/components/ui/notification-popup';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut, Plus, ArrowDown, User } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -52,6 +55,10 @@ export default function Index() {
   const { profile, getBudgetAmounts } = useProfile();
   const { addExpense, getSpendingByCategory, refetch: refetchExpenses } = useExpenses();
   const { toast } = useToast();
+  const { showPopup, currentPopup, dismissPopup } = useNotifications();
+  
+  // Track if we've shown budget warnings this session
+  const budgetWarningsShown = useRef<Set<string>>(new Set());
   
   // Check for upcoming subscription reminders
   useSubscriptionReminders();
@@ -429,6 +436,38 @@ export default function Index() {
         });
         if (!result.error) {
           refetchExpenses();
+          
+          // Check budget thresholds and show notifications
+          const newSpending = { ...spending };
+          newSpending[expenseData.category] = (newSpending[expenseData.category] || 0) + expenseData.amount;
+          
+          const categoryBudget = budgets[expenseData.category];
+          if (categoryBudget > 0) {
+            const percentage = Math.round((newSpending[expenseData.category] / categoryBudget) * 100);
+            const categoryName = expenseData.category.charAt(0).toUpperCase() + expenseData.category.slice(1);
+            
+            // 80% warning
+            if (percentage >= 80 && percentage < 100 && !budgetWarningsShown.current.has(`${expenseData.category}-80`)) {
+              budgetWarningsShown.current.add(`${expenseData.category}-80`);
+              showPopup({
+                type: 'budget_alert',
+                title: `${categoryName} Budget Warning`,
+                body: `You've used ${percentage}% of your ${categoryName.toLowerCase()} budget. Consider slowing down!`,
+                duration: 6000
+              });
+            }
+            // 100% exceeded
+            else if (percentage >= 100 && !budgetWarningsShown.current.has(`${expenseData.category}-100`)) {
+              budgetWarningsShown.current.add(`${expenseData.category}-100`);
+              showPopup({
+                type: 'warning',
+                title: `${categoryName} Budget Exceeded! 🚨`,
+                body: `You've gone ${percentage - 100}% over your ${categoryName.toLowerCase()} budget this month.`,
+                actionLabel: 'View Dashboard',
+                duration: 8000
+              });
+            }
+          }
         }
       }
 
@@ -499,6 +538,11 @@ export default function Index() {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Notification Popup */}
+      <NotificationPopup 
+        notification={currentPopup} 
+        onDismiss={dismissPopup} 
+      />
       {/* Header */}
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
@@ -520,8 +564,11 @@ export default function Index() {
           </div>
         </div>
         
-        {/* Page indicator dots + Avatar */}
+        {/* Notification Bell + Page indicator dots + Avatar */}
         <div className="flex items-center gap-3">
+          {/* Notification Bell */}
+          <NotificationCenter />
+          
           <div className="flex items-center gap-1">
             {VIEWS.map((v) => (
               <motion.div

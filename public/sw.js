@@ -9,21 +9,35 @@ self.addEventListener('push', function(event) {
   try {
     const data = event.data.json();
     
+    // Map notification types to icons and badges
+    const typeConfig = {
+      budget_alert: { icon: '/pwa-192x192.png', badge: '/pwa-192x192.png' },
+      subscription: { icon: '/pwa-192x192.png', badge: '/pwa-192x192.png' },
+      achievement: { icon: '/pwa-192x192.png', badge: '/pwa-192x192.png' },
+      tip: { icon: '/pwa-192x192.png', badge: '/pwa-192x192.png' },
+      system: { icon: '/pwa-192x192.png', badge: '/pwa-192x192.png' },
+      warning: { icon: '/pwa-192x192.png', badge: '/pwa-192x192.png' }
+    };
+    
+    const config = typeConfig[data.type] || typeConfig.system;
+    
     const options = {
       body: data.body || 'New notification from FinBuddy',
-      icon: data.icon || '/pwa-192x192.png',
-      badge: data.badge || '/pwa-192x192.png',
-      vibrate: [100, 50, 100],
+      icon: data.icon || config.icon,
+      badge: data.badge || config.badge,
+      vibrate: data.type === 'warning' ? [200, 100, 200, 100, 200] : [100, 50, 100],
       data: {
         url: data.data?.url || '/',
+        type: data.type || 'system',
         dateOfArrival: Date.now(),
       },
-      actions: [
+      actions: data.actions || [
         { action: 'open', title: 'Open' },
         { action: 'close', title: 'Dismiss' }
       ],
-      tag: 'finbuddy-notification',
-      renotify: true
+      tag: data.tag || `finbuddy-${data.type || 'notification'}`,
+      renotify: true,
+      requireInteraction: data.type === 'warning' || data.type === 'budget_alert'
     };
 
     event.waitUntil(

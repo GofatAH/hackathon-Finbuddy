@@ -303,6 +303,20 @@
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+/* Notification bell shake animation */
+@keyframes bell-shake {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+}
+
+.animate-bell-shake {
+  animation: bell-shake 0.6s ease-in-out;
+}
+
 /* Safe area for mobile */
 .safe-area-inset-bottom {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
