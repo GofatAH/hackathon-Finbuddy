@@ -12,11 +12,30 @@ serve(async (req) => {
   }
 
   try {
-    const { message, personality, userName, budgetInfo, conversationHistory } = await req.json();
+    const { message, personality, userName, budgetInfo, subscriptionInfo, conversationHistory } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
+    }
+
+    // Build subscription context
+    let subscriptionContext = '';
+    if (subscriptionInfo && subscriptionInfo.subscriptions && subscriptionInfo.subscriptions.length > 0) {
+      subscriptionContext = `
+
+CURRENT SUBSCRIPTIONS (${subscriptionInfo.subscriptions.length} total, ~$${subscriptionInfo.totalMonthly.toFixed(2)}/month):
+${subscriptionInfo.subscriptions.map((s: { name: string; amount: number; frequency: string; category: string; next_charge_date: string; is_trial: boolean; trial_end_date: string | null }) => 
+  `- ${s.name}: $${s.amount}/${s.frequency} (${s.category}) - Next charge: ${s.next_charge_date}${s.is_trial ? ` [TRIAL ends ${s.trial_end_date}]` : ''}`
+).join('\n')}
+${subscriptionInfo.activeTrials && subscriptionInfo.activeTrials.length > 0 ? `
+
+⚠️ ACTIVE TRIALS (remind user to cancel if needed):
+${subscriptionInfo.activeTrials.map((t: { name: string; amount: number; trial_end_date: string }) => `- ${t.name}: Trial ends ${t.trial_end_date}, then $${t.amount}/month`).join('\n')}` : ''}`;
+    } else {
+      subscriptionContext = `
+
+CURRENT SUBSCRIPTIONS: None tracked yet.`;
     }
 
     // Build system prompt based on personality
@@ -35,20 +54,28 @@ Current budget status:
 - Needs: $${budgetInfo.needs.spent.toFixed(2)} of $${budgetInfo.needs.budget.toFixed(2)} (${budgetInfo.needs.percentage}%)
 - Wants: $${budgetInfo.wants.spent.toFixed(2)} of $${budgetInfo.wants.budget.toFixed(2)} (${budgetInfo.wants.percentage}%)
 - Savings: $${budgetInfo.savings.spent.toFixed(2)} of $${budgetInfo.savings.budget.toFixed(2)} (${budgetInfo.savings.percentage}%)
+${subscriptionContext}
 
 Your job:
-1. Parse expense entries OR subscription entries from natural language
-2. DIFFERENTIATE between one-time expenses, subscriptions, and FREE TRIALS:
+1. ANSWER QUESTIONS about expenses, budgets, AND subscriptions
+2. When asked about subscriptions (e.g. "how are my subscriptions?", "what subscriptions do I have?", "when does X renew?"):
+   - Summarize their current subscriptions with amounts and next charge dates
+   - Highlight any trials ending soon
+   - Provide insights on total subscription spending
+   - Suggest canceling unused subscriptions if appropriate
+   - Give advice on subscription management
+3. Parse expense entries OR subscription entries from natural language
+4. DIFFERENTIATE between one-time expenses, subscriptions, and FREE TRIALS:
    - FREE TRIALS: Look for keywords like "free trial", "trial", "7 day trial", "14 day trial", "30 day trial", "trying out", "trial period", "free for X days/weeks/months"
    - SUBSCRIPTIONS: Netflix, Spotify, gym membership, phone bill, insurance, streaming services, SaaS, monthly/yearly fees, ChatGPT, Lovable, any recurring service
    - EXPENSES: coffee, lunch, groceries, gas, shopping, one-time purchases
 
-3. Auto-categorize EXPENSES into:
+5. Auto-categorize EXPENSES into:
    - Needs: groceries, rent, utilities, gas, healthcare, insurance, phone bill
    - Wants: dining, coffee, entertainment, shopping
    - Savings: savings deposit, investment
 
-4. Auto-categorize SUBSCRIPTIONS into:
+6. Auto-categorize SUBSCRIPTIONS into:
    - tools: Lovable, ChatGPT, OpenAI, GitHub, Copilot, Notion, Figma, Canva, Vercel, AWS, developer tools, AI services
    - entertainment: Netflix, Hulu, Disney+, HBO, Amazon Prime Video, YouTube Premium, Crunchyroll, streaming video
    - music: Spotify, Apple Music, Tidal, Deezer, Audible, audio/music streaming
@@ -60,8 +87,8 @@ Your job:
    - news: NYTimes, WSJ, Medium, Substack, news/media subscriptions
    - other: anything that doesn't fit above
 
-5. Respond briefly with confirmation
-6. Adjust tone based on spending level:
+7. Respond briefly with confirmation
+8. Adjust tone based on spending level:
    - 0-75%: positive
    - 76-90%: gentle awareness  
    - 91%+: soft warning (never shame)
