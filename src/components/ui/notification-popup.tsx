@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotifyOptions, NotificationType } from '@/hooks/useNotifications';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 const iconMap: Record<NotificationType, typeof AlertTriangle> = {
   budget_alert: AlertTriangle,
@@ -64,8 +65,16 @@ interface NotificationPopupProps {
 export function NotificationPopup({ notification, onDismiss, onAction }: NotificationPopupProps) {
   const [progress, setProgress] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
+  const { playNotificationSound } = useNotificationSound();
   
   const duration = notification?.duration || 5000;
+
+  // Play sound when notification appears
+  useEffect(() => {
+    if (notification) {
+      playNotificationSound(notification.type);
+    }
+  }, [notification, playNotificationSound]);
 
   useEffect(() => {
     if (!notification || isPaused) return;
