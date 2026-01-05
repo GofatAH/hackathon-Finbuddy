@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { NotifyOptions, NotificationType } from '@/hooks/useNotifications';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { PersonalityType } from '@/lib/personalities';
 
 const iconMap: Record<NotificationType, typeof AlertTriangle> = {
   budget_alert: AlertTriangle,
@@ -60,21 +61,22 @@ interface NotificationPopupProps {
   notification: NotifyOptions | null;
   onDismiss: () => void;
   onAction?: () => void;
+  personality?: PersonalityType;
 }
 
-export function NotificationPopup({ notification, onDismiss, onAction }: NotificationPopupProps) {
+export function NotificationPopup({ notification, onDismiss, onAction, personality = 'chill' }: NotificationPopupProps) {
   const [progress, setProgress] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
   const { playNotificationSound } = useNotificationSound();
   
   const duration = notification?.duration || 5000;
 
-  // Play sound when notification appears
+  // Play sound when notification appears with personality-specific sound
   useEffect(() => {
     if (notification) {
-      playNotificationSound(notification.type);
+      playNotificationSound(notification.type, personality);
     }
-  }, [notification, playNotificationSound]);
+  }, [notification, playNotificationSound, personality]);
 
   useEffect(() => {
     if (!notification || isPaused) return;

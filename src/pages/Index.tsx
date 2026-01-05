@@ -18,6 +18,7 @@ import { MessageCircle, LayoutDashboard, CreditCard, Settings as SettingsIcon, L
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { getNotificationTitle, getNotificationBody, getNotificationType } from '@/lib/notification-messages';
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
@@ -449,20 +450,22 @@ export default function Index() {
             // 80% warning
             if (percentage >= 80 && percentage < 100 && !budgetWarningsShown.current.has(`${expenseData.category}-80`)) {
               budgetWarningsShown.current.add(`${expenseData.category}-80`);
+              const personality = profile?.personality || 'chill';
               showPopup({
-                type: 'budget_alert',
-                title: `${categoryName} Budget Warning`,
-                body: `You've used ${percentage}% of your ${categoryName.toLowerCase()} budget. Consider slowing down!`,
+                type: getNotificationType('budget_warning_80'),
+                title: getNotificationTitle('budget_warning_80', personality),
+                body: getNotificationBody('budget_warning_80', personality, { category: categoryName, percentage }),
                 duration: 6000
               });
             }
             // 100% exceeded
             else if (percentage >= 100 && !budgetWarningsShown.current.has(`${expenseData.category}-100`)) {
               budgetWarningsShown.current.add(`${expenseData.category}-100`);
+              const personality = profile?.personality || 'chill';
               showPopup({
-                type: 'warning',
-                title: `${categoryName} Budget Exceeded! 🚨`,
-                body: `You've gone ${percentage - 100}% over your ${categoryName.toLowerCase()} budget this month.`,
+                type: getNotificationType('budget_exceeded_100'),
+                title: getNotificationTitle('budget_exceeded_100', personality),
+                body: getNotificationBody('budget_exceeded_100', personality, { category: categoryName, overBy: percentage - 100 }),
                 actionLabel: 'View Dashboard',
                 duration: 8000
               });
@@ -541,7 +544,8 @@ export default function Index() {
       {/* Notification Popup */}
       <NotificationPopup 
         notification={currentPopup} 
-        onDismiss={dismissPopup} 
+        onDismiss={dismissPopup}
+        personality={profile?.personality || 'chill'}
       />
       {/* Header */}
       <motion.header 

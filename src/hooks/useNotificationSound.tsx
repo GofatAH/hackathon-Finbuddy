@@ -1,44 +1,70 @@
 import { useCallback, useRef } from 'react';
 import { NotificationType } from './useNotifications';
+import { PersonalityType } from '@/lib/personalities';
 
-// Sound configurations for different notification types
-const soundConfigs: Record<NotificationType, { frequency: number; duration: number; type: OscillatorType; pattern: number[] }> = {
-  budget_alert: {
-    frequency: 440,
-    duration: 150,
-    type: 'sine',
-    pattern: [1, 0.5, 1] // Two short beeps
+// Personality-specific sound profiles
+interface SoundProfile {
+  baseFrequency: number;
+  waveType: OscillatorType;
+  volume: number;
+  attackTime: number;
+  releaseMultiplier: number;
+  gapMs: number;
+}
+
+const personalitySounds: Record<PersonalityType, SoundProfile> = {
+  chill: {
+    baseFrequency: 350, // Lower, mellow
+    waveType: 'sine',
+    volume: 0.12,
+    attackTime: 0.03, // Slower attack
+    releaseMultiplier: 1.2, // Longer fade
+    gapMs: 120 // More space between notes
   },
-  warning: {
-    frequency: 330,
-    duration: 200,
-    type: 'sawtooth',
-    pattern: [1, 0.3, 1, 0.3, 1] // Three urgent beeps
+  hype: {
+    baseFrequency: 550, // Higher, energetic
+    waveType: 'square',
+    volume: 0.15,
+    attackTime: 0.005, // Punchy attack
+    releaseMultiplier: 0.7, // Snappy
+    gapMs: 60 // Rapid-fire
   },
-  subscription: {
-    frequency: 523,
-    duration: 120,
-    type: 'sine',
-    pattern: [1, 0.8, 1.2] // Ascending tones
+  straight: {
+    baseFrequency: 440, // Clean A4
+    waveType: 'sine',
+    volume: 0.1,
+    attackTime: 0.01,
+    releaseMultiplier: 0.8,
+    gapMs: 0 // Single clean tone
   },
-  achievement: {
-    frequency: 659,
-    duration: 100,
-    type: 'sine',
-    pattern: [1, 1.25, 1.5, 2] // Victory fanfare
-  },
-  tip: {
-    frequency: 587,
-    duration: 100,
-    type: 'triangle',
-    pattern: [1, 1.2] // Gentle ping
-  },
-  system: {
-    frequency: 500,
-    duration: 80,
-    type: 'sine',
-    pattern: [1] // Simple blip
+  supportive: {
+    baseFrequency: 420, // Warm frequency
+    waveType: 'triangle',
+    volume: 0.11,
+    attackTime: 0.02, // Gentle
+    releaseMultiplier: 1.0,
+    gapMs: 100
   }
+};
+
+// Notification type patterns (frequency multipliers)
+const typePatterns: Record<NotificationType, number[]> = {
+  budget_alert: [1, 0.75, 1], // Warning pattern
+  warning: [1, 0.5, 1, 0.5, 1], // Urgent triple
+  subscription: [1, 1.1, 1.2], // Ascending reminder
+  achievement: [1, 1.25, 1.5, 2], // Victory fanfare
+  tip: [1, 1.15], // Gentle double
+  system: [1] // Simple blip
+};
+
+// Duration adjustments by type (in ms)
+const typeDurations: Record<NotificationType, number> = {
+  budget_alert: 140,
+  warning: 120,
+  subscription: 130,
+  achievement: 100,
+  tip: 110,
+  system: 80
 };
 
 export function useNotificationSound() {
@@ -55,9 +81,11 @@ export function useNotificationSound() {
   const playTone = useCallback((
     frequency: number,
     duration: number,
-    type: OscillatorType,
+    waveType: OscillatorType,
     startTime: number,
-    volume: number = 0.15
+    volume: number,
+    attackTime: number,
+    releaseMultiplier: number
   ) => {
     const ctx = getAudioContext();
     
@@ -67,23 +95,33 @@ export function useNotificationSound() {
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
     
-    oscillator.type = type;
+    oscillator.type = waveType;
     oscillator.frequency.setValueAtTime(frequency, startTime);
+    
+    const durationSec = (duration * releaseMultiplier) / 1000;
     
     // Envelope for smooth sound
     gainNode.gain.setValueAtTime(0, startTime);
-    gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration / 1000);
+    gainNode.gain.linearRampToValueAtTime(volume, startTime + attackTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
     
     oscillator.start(startTime);
-    oscillator.stop(startTime + duration / 1000);
+    oscillator.stop(startTime + durationSec);
+    
+    return durationSec;
   }, [getAudioContext]);
 
-  const playNotificationSound = useCallback((type: NotificationType) => {
+  const playNotificationSound = useCallback((
+    type: NotificationType,
+    personality: PersonalityType = 'chill'
+  ) => {
     if (isPlayingRef.current) return;
     
     try {
-      const config = soundConfigs[type] || soundConfigs.system;
+      const profile = personalitySounds[personality] || personalitySounds.chill;
+      const pattern = typePatterns[type] || typePatterns.system;
+      const baseDuration = typeDurations[type] || 100;
+      
       const ctx = getAudioContext();
       
       // Resume audio context if suspended (browser autoplay policy)
@@ -95,10 +133,21 @@ export function useNotificationSound() {
       const now = ctx.currentTime;
       let offset = 0;
       
-      config.pattern.forEach((multiplier, index) => {
-        const freq = config.frequency * multiplier;
-        playTone(freq, config.duration, config.type, now + offset);
-        offset += (config.duration + 80) / 1000; // Add gap between notes
+      // For "straight" personality, only play first note
+      const notesToPlay = personality === 'straight' ? pattern.slice(0, 1) : pattern;
+      
+      notesToPlay.forEach((multiplier) => {
+        const freq = profile.baseFrequency * multiplier;
+        const durationSec = playTone(
+          freq,
+          baseDuration,
+          profile.waveType,
+          now + offset,
+          profile.volume,
+          profile.attackTime,
+          profile.releaseMultiplier
+        );
+        offset += durationSec + (profile.gapMs / 1000);
       });
       
       // Reset playing state after sound completes
