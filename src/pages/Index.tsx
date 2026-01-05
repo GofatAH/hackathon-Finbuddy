@@ -247,6 +247,52 @@ export default function Index() {
       }
     };
 
+    // Fetch user's subscriptions for context
+    let subscriptionInfo: { 
+      subscriptions: Array<{ name: string; amount: number; frequency: string; category: string; next_charge_date: string; is_trial: boolean; trial_end_date: string | null }>;
+      totalMonthly: number;
+      activeTrials: Array<{ name: string; amount: number; trial_end_date: string }>;
+    } = { subscriptions: [], totalMonthly: 0, activeTrials: [] };
+
+    try {
+      const { data: subs } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user?.id);
+      
+      if (subs && subs.length > 0) {
+        subscriptionInfo.subscriptions = subs.map(s => ({
+          name: s.name,
+          amount: Number(s.amount),
+          frequency: s.frequency,
+          category: s.category || 'other',
+          next_charge_date: s.next_charge_date,
+          is_trial: s.is_trial || false,
+          trial_end_date: s.trial_end_date
+        }));
+        
+        // Calculate total monthly cost
+        subscriptionInfo.totalMonthly = subs.reduce((total, s) => {
+          const amount = Number(s.amount);
+          if (s.frequency === 'monthly') return total + amount;
+          if (s.frequency === 'weekly') return total + (amount * 4);
+          if (s.frequency === 'yearly') return total + (amount / 12);
+          return total;
+        }, 0);
+        
+        // Get active trials
+        subscriptionInfo.activeTrials = subs
+          .filter(s => s.is_trial && s.trial_end_date)
+          .map(s => ({
+            name: s.name,
+            amount: Number(s.amount),
+            trial_end_date: s.trial_end_date!
+          }));
+      }
+    } catch (e) {
+      console.error('Error fetching subscriptions:', e);
+    }
+
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: 'POST',
@@ -259,6 +305,7 @@ export default function Index() {
           personality: profile?.personality || 'chill',
           userName: profile?.name || 'friend',
           budgetInfo,
+          subscriptionInfo,
           conversationHistory: messages.filter(m => m.id !== 'greeting').map(m => ({
             role: m.role,
             content: m.content
