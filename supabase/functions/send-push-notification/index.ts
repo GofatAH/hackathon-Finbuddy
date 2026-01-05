@@ -9,10 +9,12 @@ const corsHeaders = {
 interface PushPayload {
   title: string;
   body: string;
+  type?: 'budget_alert' | 'subscription' | 'achievement' | 'tip' | 'system' | 'warning';
   icon?: string;
   badge?: string;
   url?: string;
   userId?: string;
+  actions?: Array<{ action: string; title: string }>;
 }
 
 // Web Push implementation using web-push protocol
@@ -78,9 +80,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { title, body, icon, badge, url, userId } = await req.json() as PushPayload;
+    const { title, body, type, icon, badge, url, userId, actions } = await req.json() as PushPayload;
 
-    console.log('Sending push notification:', { title, body, userId });
+    console.log('Sending push notification:', { title, body, type, userId });
 
     // Get push subscriptions
     let query = supabaseClient.from('push_subscriptions').select('*');
@@ -109,9 +111,12 @@ serve(async (req) => {
     const payload = JSON.stringify({
       title,
       body,
+      type: type || 'system',
       icon: icon || '/pwa-192x192.png',
       badge: badge || '/pwa-192x192.png',
-      data: { url: url || '/' }
+      data: { url: url || '/' },
+      actions: actions,
+      tag: `finbuddy-${type || 'system'}`
     });
 
     let sentCount = 0;
