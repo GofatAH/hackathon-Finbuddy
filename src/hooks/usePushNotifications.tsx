@@ -17,27 +17,96 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return outputArray.buffer as ArrayBuffer;
 }
 
+export interface PushDebugInfo {
+  isSecureContext: boolean;
+  hasServiceWorker: boolean;
+  hasPushManager: boolean;
+  hasNotification: boolean;
+  swRegistered: boolean;
+  swState: string;
+  vapidConfigured: boolean;
+}
+
 export function usePushNotifications() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<PushDebugInfo | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
   // Check if push notifications are supported and register service worker
   useEffect(() => {
-    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-    setIsSupported(supported);
-    
-    if (supported) {
-      setPermission(Notification.permission);
+    const checkSupport = async () => {
+      const debug: PushDebugInfo = {
+        isSecureContext: window.isSecureContext,
+        hasServiceWorker: 'serviceWorker' in navigator,
+        hasPushManager: 'PushManager' in window,
+        hasNotification: 'Notification' in window,
+        swRegistered: false,
+        swState: 'not-registered',
+        vapidConfigured: !!VAPID_PUBLIC_KEY
+      };
+
+      console.log('[Push] Checking support:', debug);
+
+      // Must be secure context (HTTPS or localhost)
+      if (!window.isSecureContext) {
+        console.warn('[Push] Not a secure context - push notifications require HTTPS');
+        setDebugInfo(debug);
+        setIsSupported(false);
+        return;
+      }
+
+      const supported = debug.hasServiceWorker && debug.hasPushManager && debug.hasNotification;
       
-      // Register our custom service worker for push
-      navigator.serviceWorker.register('/sw.js').catch(err => {
-        console.error('Service worker registration failed:', err);
-      });
-    }
+      if (!supported) {
+        console.warn('[Push] Browser does not support push notifications', debug);
+        setDebugInfo(debug);
+        setIsSupported(false);
+        return;
+      }
+
+      if ('Notification' in window) {
+        setPermission(Notification.permission);
+      }
+
+      try {
+        // Check if there's already a service worker registered
+        const existingReg = await navigator.serviceWorker.getRegistration('/sw.js');
+        
+        if (existingReg) {
+          console.log('[Push] Existing service worker found:', existingReg.active?.state);
+          debug.swRegistered = true;
+          debug.swState = existingReg.active?.state || 'waiting';
+        } else {
+          // Register our custom service worker for push
+          console.log('[Push] Registering service worker...');
+          const registration = await navigator.serviceWorker.register('/sw.js', {
+            scope: '/'
+          });
+          
+          console.log('[Push] Service worker registered:', registration.scope);
+          debug.swRegistered = true;
+          debug.swState = registration.active?.state || 'installing';
+
+          // Wait for the service worker to be ready
+          await navigator.serviceWorker.ready;
+          console.log('[Push] Service worker is ready');
+        }
+
+        setDebugInfo(debug);
+        setIsSupported(true);
+      } catch (err) {
+        console.error('[Push] Service worker registration failed:', err);
+        debug.swState = 'error';
+        setDebugInfo(debug);
+        setIsSupported(false);
+      }
+    };
+
+    checkSupport();
   }, []);
 
   // Check if already subscribed
@@ -46,11 +115,15 @@ export function usePushNotifications() {
       if (!isSupported || !user) return;
 
       try {
+        // Wait for service worker to be ready
         const registration = await navigator.serviceWorker.ready;
+        console.log('[Push] Checking existing subscription...');
+        
         const subscription = await registration.pushManager.getSubscription();
+        console.log('[Push] Existing subscription:', subscription ? 'found' : 'none');
         setIsSubscribed(!!subscription);
       } catch (error) {
-        console.error('Error checking subscription:', error);
+        console.error('[Push] Error checking subscription:', error);
       }
     };
 
@@ -58,10 +131,21 @@ export function usePushNotifications() {
   }, [isSupported, user]);
 
   const subscribe = useCallback(async () => {
-    if (!isSupported || !user || !VAPID_PUBLIC_KEY) {
+    if (!VAPID_PUBLIC_KEY) {
+      console.error('[Push] VAPID public key not configured');
+      toast({
+        title: 'Push not configured',
+        description: 'VAPID key is not set up',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    if (!isSupported || !user) {
+      console.error('[Push] Not supported or no user', { isSupported, user: !!user });
       toast({
         title: 'Push notifications not available',
-        description: 'Your browser does not support push notifications or VAPID key is not configured',
+        description: 'Your browser does not support push notifications',
         variant: 'destructive',
       });
       return false;
@@ -71,10 +155,12 @@ export function usePushNotifications() {
 
     try {
       // Request permission
-      const permission = await Notification.requestPermission();
-      setPermission(permission);
+      console.log('[Push] Requesting permission...');
+      const perm = await Notification.requestPermission();
+      console.log('[Push] Permission result:', perm);
+      setPermission(perm);
 
-      if (permission !== 'granted') {
+      if (perm !== 'granted') {
         toast({
           title: 'Permission denied',
           description: 'Please enable notifications in your browser settings',
@@ -84,7 +170,9 @@ export function usePushNotifications() {
       }
 
       // Get service worker registration
+      console.log('[Push] Getting service worker ready...');
       const registration = await navigator.serviceWorker.ready;
+      console.log('[Push] Service worker ready, subscribing to push...');
 
       // Subscribe to push
       const subscription = await registration.pushManager.subscribe({
@@ -92,6 +180,7 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
+      console.log('[Push] Subscription created:', subscription.endpoint);
       const subscriptionJson = subscription.toJSON();
 
       // Save to database
@@ -105,9 +194,11 @@ export function usePushNotifications() {
       });
 
       if (error) {
+        console.error('[Push] Database error:', error);
         throw error;
       }
 
+      console.log('[Push] Subscription saved to database');
       setIsSubscribed(true);
       toast({
         title: 'Notifications enabled! 🔔',
@@ -116,10 +207,10 @@ export function usePushNotifications() {
 
       return true;
     } catch (error) {
-      console.error('Error subscribing to push:', error);
+      console.error('[Push] Error subscribing:', error);
       toast({
         title: 'Failed to enable notifications',
-        description: 'Please try again later',
+        description: error instanceof Error ? error.message : 'Please try again later',
         variant: 'destructive',
       });
       return false;
@@ -156,7 +247,7 @@ export function usePushNotifications() {
 
       return true;
     } catch (error) {
-      console.error('Error unsubscribing:', error);
+      console.error('[Push] Error unsubscribing:', error);
       toast({
         title: 'Failed to disable notifications',
         variant: 'destructive',
@@ -172,6 +263,7 @@ export function usePushNotifications() {
     isSubscribed,
     permission,
     loading,
+    debugInfo,
     subscribe,
     unsubscribe,
   };

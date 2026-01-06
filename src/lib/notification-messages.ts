@@ -5,11 +5,16 @@ export type NotificationKey =
   | 'budget_warning_80'
   | 'budget_exceeded_100'
   | 'subscription_reminder'
+  | 'subscription_reminder_today'
   | 'trial_ending'
   | 'expense_logged'
   | 'first_expense'
   | 'streak_3_days'
-  | 'under_budget';
+  | 'under_budget'
+  | 'welcome_first_time'
+  | 'welcome_returning'
+  | 'daily_motivation'
+  | 'quick_budget_update';
 
 interface NotificationTemplate {
   title: Record<PersonalityType, string>;
@@ -128,6 +133,76 @@ const templates: Record<NotificationKey, NotificationTemplate> = {
       straight: (d) => `${d.category}: ${d.remaining}% remaining.`,
       supportive: (d) => `You still have ${d.remaining}% of ${d.category} left. Great job!`
     }
+  },
+  welcome_first_time: {
+    title: {
+      chill: 'Welcome to the Crew! 🙌',
+      hype: 'WELCOME TO FINBUDDY! 🚀🔥',
+      straight: 'Welcome',
+      supportive: 'So Happy You\'re Here! 💚'
+    },
+    body: {
+      chill: (_d) => `Yo! You're all set up. Start logging expenses by just typing naturally`,
+      hype: (_d) => `LET'S GET YOUR FINANCES IN CHECK! Type your first expense to begin!`,
+      straight: (_d) => `Account ready. Log expenses via chat.`,
+      supportive: (_d) => `Welcome! I'm here to help you on your financial journey. No pressure!`
+    }
+  },
+  welcome_returning: {
+    title: {
+      chill: 'Welcome Back! 👋',
+      hype: 'YOU\'RE BACK! LET\'S GO! 🔥',
+      straight: 'Welcome Back',
+      supportive: 'Great to See You! ✨'
+    },
+    body: {
+      chill: (_d) => `Good to see you again — ready to track some expenses?`,
+      hype: (_d) => `TIME TO CRUSH THOSE FINANCIAL GOALS!`,
+      straight: (_d) => `Ready to log expenses.`,
+      supportive: (_d) => `So glad you're back! How can I help you today?`
+    }
+  },
+  subscription_reminder_today: {
+    title: {
+      chill: 'Heads Up! 💰',
+      hype: 'CHARGE INCOMING TODAY! 💸',
+      straight: 'Subscription Due Today',
+      supportive: 'Quick Reminder 📅'
+    },
+    body: {
+      chill: (d) => `${d.name} ($${d.amount}) charges today${(d.count as number) > 1 ? ` + ${(d.count as number) - 1} more` : ''}`,
+      hype: (d) => `${d.name} is charging $${d.amount} TODAY! Ready for it?!`,
+      straight: (d) => `${d.name}: $${d.amount} due today.`,
+      supportive: (d) => `Just a heads up — ${d.name} ($${d.amount}) renews today`
+    }
+  },
+  daily_motivation: {
+    title: {
+      chill: 'Daily Vibe 💭',
+      hype: 'DAILY MOTIVATION! 💪',
+      straight: 'Tip of the Day',
+      supportive: 'A Little Encouragement 🌟'
+    },
+    body: {
+      chill: (_d) => `Small wins add up — every expense you track is a step forward`,
+      hype: (_d) => `EVERY DOLLAR TRACKED IS A DOLLAR MASTERED! Let's get it!`,
+      straight: (_d) => `Consistent tracking leads to better financial decisions.`,
+      supportive: (_d) => `You're doing amazing by tracking your spending. Keep it up!`
+    }
+  },
+  quick_budget_update: {
+    title: {
+      chill: 'Budget Check 📊',
+      hype: 'BUDGET UPDATE! 📈',
+      straight: 'Budget Status',
+      supportive: 'Budget Update 💡'
+    },
+    body: {
+      chill: (d) => `${d.category} at ${d.percentage}% — just keeping you in the loop`,
+      hype: (d) => `${d.category} is at ${d.percentage}%! Stay focused!`,
+      straight: (d) => `${d.category}: ${d.percentage}% used.`,
+      supportive: (d) => `Your ${d.category} budget is at ${d.percentage}%. You've got this!`
+    }
   }
 };
 
@@ -156,11 +231,16 @@ export function getNotificationType(key: NotificationKey): NotificationType {
     budget_warning_80: 'budget_alert',
     budget_exceeded_100: 'warning',
     subscription_reminder: 'subscription',
+    subscription_reminder_today: 'subscription',
     trial_ending: 'subscription',
     expense_logged: 'tip',
     first_expense: 'achievement',
     streak_3_days: 'achievement',
-    under_budget: 'achievement'
+    under_budget: 'achievement',
+    welcome_first_time: 'achievement',
+    welcome_returning: 'tip',
+    daily_motivation: 'tip',
+    quick_budget_update: 'budget_alert'
   };
   return typeMap[key] || 'system';
 }

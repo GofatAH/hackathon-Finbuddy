@@ -36,6 +36,7 @@ export default function Auth() {
         variant: 'destructive' 
       });
     } else {
+      sessionStorage.setItem('just_logged_in', 'true');
       navigate('/');
     }
   };
@@ -75,6 +76,7 @@ export default function Auth() {
         });
       }
     } else {
+      sessionStorage.setItem('just_signed_up', 'true');
       toast({ 
         title: 'Welcome to FinBuddy! 🎉', 
         description: "Let's set up your budget."
