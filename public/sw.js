@@ -1,13 +1,31 @@
 // Service Worker for Push Notifications
+// Version: 1.1
+
+console.log('[SW] Service Worker loaded');
+
+// Install event - take control immediately
+self.addEventListener('install', function(event) {
+  console.log('[SW] Installing service worker...');
+  event.waitUntil(self.skipWaiting());
+});
+
+// Activate event - claim all clients
+self.addEventListener('activate', function(event) {
+  console.log('[SW] Activating service worker...');
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener('push', function(event) {
+  console.log('[SW] Push event received');
+  
   if (!event.data) {
-    console.log('Push event but no data');
+    console.log('[SW] Push event but no data');
     return;
   }
 
   try {
     const data = event.data.json();
+    console.log('[SW] Push data:', data);
     
     // Map notification types to icons and badges
     const typeConfig = {
@@ -44,11 +62,12 @@ self.addEventListener('push', function(event) {
       self.registration.showNotification(data.title || 'FinBuddy', options)
     );
   } catch (error) {
-    console.error('Error parsing push data:', error);
+    console.error('[SW] Error parsing push data:', error);
   }
 });
 
 self.addEventListener('notificationclick', function(event) {
+  console.log('[SW] Notification clicked');
   event.notification.close();
 
   if (event.action === 'close') {
@@ -78,6 +97,10 @@ self.addEventListener('notificationclick', function(event) {
 });
 
 self.addEventListener('notificationclose', function(event) {
-  console.log('Notification closed', event);
+  console.log('[SW] Notification closed');
 });
 
+// Handle fetch for offline support (basic)
+self.addEventListener('fetch', function(event) {
+  // Just pass through for now - VitePWA handles caching
+});

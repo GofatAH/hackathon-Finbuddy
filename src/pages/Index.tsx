@@ -5,6 +5,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useWelcomeNotifications } from '@/hooks/useWelcomeNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
@@ -60,6 +61,9 @@ export default function Index() {
   
   // Track if we've shown budget warnings this session
   const budgetWarningsShown = useRef<Set<string>>(new Set());
+  
+  // Welcome notifications on app open
+  useWelcomeNotifications();
   
   // Check for upcoming subscription reminders
   useSubscriptionReminders();
