@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi, Timer, Bell } from 'lucide-react';
+import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi, Timer, Bell, Search, ArrowUpDown, Edit2, X, PieChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type SubscriptionCategory = 'tools' | 'entertainment' | 'productivity' | 'lifestyle' | 'utilities' | 'gaming' | 'music' | 'news' | 'fitness' | 'other';
 
@@ -38,6 +39,32 @@ const CATEGORY_CONFIG: Record<SubscriptionCategory, { label: string; icon: typeo
   fitness: { label: 'Fitness', icon: Dumbbell, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
   other: { label: 'Other', icon: MoreHorizontal, color: 'text-gray-500', bgColor: 'bg-gray-500/10' },
 };
+
+// Popular subscription suggestions with default prices
+const POPULAR_SUBSCRIPTIONS: { name: string; amount: number; frequency: 'monthly' | 'yearly' | 'weekly'; category: SubscriptionCategory }[] = [
+  { name: 'Netflix', amount: 15.49, frequency: 'monthly', category: 'entertainment' },
+  { name: 'Spotify', amount: 10.99, frequency: 'monthly', category: 'music' },
+  { name: 'ChatGPT Plus', amount: 20.00, frequency: 'monthly', category: 'tools' },
+  { name: 'Disney+', amount: 7.99, frequency: 'monthly', category: 'entertainment' },
+  { name: 'YouTube Premium', amount: 13.99, frequency: 'monthly', category: 'entertainment' },
+  { name: 'Apple Music', amount: 10.99, frequency: 'monthly', category: 'music' },
+  { name: 'Amazon Prime', amount: 14.99, frequency: 'monthly', category: 'lifestyle' },
+  { name: 'HBO Max', amount: 15.99, frequency: 'monthly', category: 'entertainment' },
+  { name: 'Hulu', amount: 7.99, frequency: 'monthly', category: 'entertainment' },
+  { name: 'Xbox Game Pass', amount: 14.99, frequency: 'monthly', category: 'gaming' },
+  { name: 'Adobe Creative Cloud', amount: 54.99, frequency: 'monthly', category: 'tools' },
+  { name: 'Microsoft 365', amount: 9.99, frequency: 'monthly', category: 'productivity' },
+  { name: 'Notion', amount: 10.00, frequency: 'monthly', category: 'productivity' },
+  { name: 'GitHub Pro', amount: 4.00, frequency: 'monthly', category: 'tools' },
+  { name: 'Figma', amount: 12.00, frequency: 'monthly', category: 'tools' },
+  { name: 'Gym Membership', amount: 49.99, frequency: 'monthly', category: 'fitness' },
+  { name: 'iCloud+', amount: 2.99, frequency: 'monthly', category: 'utilities' },
+  { name: 'Google One', amount: 2.99, frequency: 'monthly', category: 'utilities' },
+  { name: 'NordVPN', amount: 12.99, frequency: 'monthly', category: 'utilities' },
+  { name: 'Audible', amount: 14.95, frequency: 'monthly', category: 'music' },
+];
+
+type SortOption = 'next_charge' | 'amount_high' | 'amount_low' | 'name' | 'last_used';
 
 // Auto-detect category from service name
 const detectCategory = (name: string): SubscriptionCategory => {
@@ -99,6 +126,15 @@ export function Subscriptions() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [trialToConvert, setTrialToConvert] = useState<Subscription | null>(null);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('next_charge');
+  const [filterCategory, setFilterCategory] = useState<SubscriptionCategory | 'all'>('all');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Form state
   const [name, setName] = useState('');
@@ -108,6 +144,13 @@ export function Subscriptions() {
   const [nextCharge, setNextCharge] = useState('');
   const [isTrial, setIsTrial] = useState(false);
   const [trialEndDate, setTrialEndDate] = useState('');
+  
+  // Edit form state
+  const [editName, setEditName] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editFrequency, setEditFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
+  const [editCategory, setEditCategory] = useState<SubscriptionCategory>('other');
+  const [editNextCharge, setEditNextCharge] = useState('');
 
   // Auto-detect category when name changes
   useEffect(() => {
@@ -268,6 +311,71 @@ export function Subscriptions() {
     setConvertDialogOpen(true);
   };
 
+  const openEditDialog = (sub: Subscription) => {
+    setEditingSubscription(sub);
+    setEditName(sub.name);
+    setEditAmount(sub.amount.toString());
+    setEditFrequency(sub.frequency);
+    setEditCategory(sub.category);
+    setEditNextCharge(sub.next_charge_date);
+    setEditDialogOpen(true);
+  };
+
+  const updateSubscription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSubscription || !editName || !editAmount) return;
+
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          name: editName,
+          amount: parseFloat(editAmount),
+          frequency: editFrequency,
+          category: editCategory,
+          next_charge_date: editNextCharge
+        })
+        .eq('id', editingSubscription.id);
+      
+      if (error) throw error;
+      
+      setSubscriptions(prev => prev.map(s => 
+        s.id === editingSubscription.id 
+          ? { ...s, name: editName, amount: parseFloat(editAmount), frequency: editFrequency, category: editCategory, next_charge_date: editNextCharge }
+          : s
+      ));
+      
+      toast({ title: 'Subscription updated! ✓' });
+      setEditDialogOpen(false);
+      setEditingSubscription(null);
+    } catch (error) {
+      toast({ title: 'Failed to update', variant: 'destructive' });
+    }
+  };
+
+  const selectSuggestion = (suggestion: typeof POPULAR_SUBSCRIPTIONS[0]) => {
+    setName(suggestion.name);
+    setAmount(suggestion.amount.toString());
+    setFrequency(suggestion.frequency);
+    setCategory(suggestion.category);
+    setShowSuggestions(false);
+    
+    // Set next charge to 1 month from now for monthly subscriptions
+    const nextDate = new Date();
+    if (suggestion.frequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+    else if (suggestion.frequency === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
+    else nextDate.setDate(nextDate.getDate() + 7);
+    setNextCharge(nextDate.toISOString().split('T')[0]);
+  };
+
+  // Filter suggestions based on input
+  const filteredSuggestions = useMemo(() => {
+    if (!name) return POPULAR_SUBSCRIPTIONS.slice(0, 6);
+    return POPULAR_SUBSCRIPTIONS.filter(s => 
+      s.name.toLowerCase().includes(name.toLowerCase())
+    ).slice(0, 6);
+  }, [name]);
+
   const confirmConvertToPaid = async () => {
     if (!trialToConvert) return;
     
@@ -373,8 +481,48 @@ export function Subscriptions() {
   const upcomingCharges = getUpcomingSubscriptions().reduce((sum, s) => sum + s.amount, 0);
   const activeTrials = getActiveTrials();
 
+  // Filtered and sorted subscriptions
+  const processedSubscriptions = useMemo(() => {
+    let result = [...subscriptions];
+    
+    // Apply search filter
+    if (searchQuery) {
+      result = result.filter(s => 
+        s.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Apply category filter
+    if (filterCategory !== 'all') {
+      result = result.filter(s => s.category === filterCategory);
+    }
+    
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'next_charge':
+          return new Date(a.next_charge_date).getTime() - new Date(b.next_charge_date).getTime();
+        case 'amount_high':
+          return b.amount - a.amount;
+        case 'amount_low':
+          return a.amount - b.amount;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'last_used':
+          if (!a.last_used_date && !b.last_used_date) return 0;
+          if (!a.last_used_date) return 1;
+          if (!b.last_used_date) return -1;
+          return new Date(b.last_used_date).getTime() - new Date(a.last_used_date).getTime();
+        default:
+          return 0;
+      }
+    });
+    
+    return result;
+  }, [subscriptions, searchQuery, filterCategory, sortBy]);
+
   // Group subscriptions by category
-  const groupedSubscriptions = subscriptions.reduce((acc, sub) => {
+  const groupedSubscriptions = processedSubscriptions.reduce((acc, sub) => {
     if (!acc[sub.category]) acc[sub.category] = [];
     acc[sub.category].push(sub);
     return acc;
@@ -385,35 +533,89 @@ export function Subscriptions() {
     return order.indexOf(a as SubscriptionCategory) - order.indexOf(b as SubscriptionCategory);
   }) as SubscriptionCategory[];
 
+  // Category breakdown for analytics
+  const categoryBreakdown = useMemo(() => {
+    return Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+      const subs = subscriptions.filter(s => s.category === key && !s.is_trial);
+      const total = subs.reduce((sum, s) => {
+        if (s.frequency === 'weekly') return sum + s.amount * 4.33;
+        if (s.frequency === 'yearly') return sum + s.amount / 12;
+        return sum + s.amount;
+      }, 0);
+      return { category: key as SubscriptionCategory, ...config, total, count: subs.length };
+    }).filter(c => c.count > 0).sort((a, b) => b.total - a.total);
+  }, [subscriptions]);
+
   return (
     <div className="px-3 py-2 space-y-3 overflow-y-auto h-full pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Subscriptions</h2>
-          <p className="text-xs text-muted-foreground">{subscriptions.length} active</p>
+          <p className="text-xs text-muted-foreground">{subscriptions.length} active · ${getMonthlyTotal().toFixed(0)}/mo</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <div className="flex gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setShowAnalytics(!showAnalytics)}
+          >
+            <PieChart className="w-3.5 h-3.5" />
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="rounded-full shadow-md h-8 text-xs">
               <Plus className="w-3.5 h-3.5 mr-1" /> Add
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[85vh] overflow-y-auto mx-4">
-            <DialogHeader>
-              <DialogTitle className="text-base">Add Subscription</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={addSubscription} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-xs">Service Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Netflix, ChatGPT, Spotify..."
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
+            </DialogTrigger>
+            <DialogContent className="max-h-[85vh] overflow-y-auto mx-4">
+              <DialogHeader>
+                <DialogTitle className="text-base">Add Subscription</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={addSubscription} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-xs">Service Name</Label>
+                  <div className="relative">
+                    <Input
+                      id="name"
+                      placeholder="Netflix, ChatGPT, Spotify..."
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      className="h-9 text-sm"
+                    />
+                    <AnimatePresence>
+                      {showSuggestions && filteredSuggestions.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden"
+                        >
+                          {filteredSuggestions.map((suggestion) => {
+                            const Icon = CATEGORY_CONFIG[suggestion.category].icon;
+                            return (
+                              <button
+                                key={suggestion.name}
+                                type="button"
+                                onClick={() => selectSuggestion(suggestion)}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted transition-colors text-left"
+                              >
+                                <Icon className={cn("w-4 h-4", CATEGORY_CONFIG[suggestion.category].color)} />
+                                <span className="flex-1 text-sm">{suggestion.name}</span>
+                                <span className="text-xs text-muted-foreground">${suggestion.amount}/mo</span>
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="amount" className="text-xs">Amount ($)</Label>
@@ -491,11 +693,214 @@ export function Subscriptions() {
                   />
                 </div>
               )}
-              <Button type="submit" className="w-full h-9 text-sm">Add Subscription</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <Button type="submit" className="w-full h-9 text-sm">Add Subscription</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Search & Filter Bar */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search subscriptions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-xs"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+              onClick={() => setSearchQuery('')}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+          <SelectTrigger className="h-8 w-[110px] text-xs">
+            <ArrowUpDown className="w-3 h-3 mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="next_charge" className="text-xs">Next charge</SelectItem>
+            <SelectItem value="amount_high" className="text-xs">Highest cost</SelectItem>
+            <SelectItem value="amount_low" className="text-xs">Lowest cost</SelectItem>
+            <SelectItem value="name" className="text-xs">Name A-Z</SelectItem>
+            <SelectItem value="last_used" className="text-xs">Last used</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Category Filter Chips */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-thin">
+        <button
+          onClick={() => setFilterCategory('all')}
+          className={cn(
+            "px-2.5 py-1 rounded-full text-xs font-medium shrink-0 transition-colors",
+            filterCategory === 'all' 
+              ? "bg-primary text-primary-foreground" 
+              : "bg-muted hover:bg-muted/80"
+          )}
+        >
+          All ({subscriptions.length})
+        </button>
+        {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+          const count = subscriptions.filter(s => s.category === key).length;
+          if (count === 0) return null;
+          const Icon = config.icon;
+          return (
+            <button
+              key={key}
+              onClick={() => setFilterCategory(key as SubscriptionCategory)}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 transition-colors",
+                filterCategory === key 
+                  ? "bg-primary text-primary-foreground" 
+                  : config.bgColor
+              )}
+            >
+              <Icon className={cn("w-3 h-3", filterCategory === key ? "" : config.color)} />
+              {count}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Analytics Panel */}
+      <AnimatePresence>
+        {showAnalytics && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <Card className="overflow-hidden">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm">Spending Breakdown</h3>
+                  <span className="text-xs text-muted-foreground">${getMonthlyTotal().toFixed(0)}/mo total</span>
+                </div>
+                <div className="space-y-2">
+                  {categoryBreakdown.map((cat) => {
+                    const Icon = cat.icon;
+                    const percentage = getMonthlyTotal() > 0 ? (cat.total / getMonthlyTotal()) * 100 : 0;
+                    return (
+                      <div key={cat.category} className="flex items-center gap-2">
+                        <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", cat.bgColor)}>
+                          <Icon className={cn("w-3.5 h-3.5", cat.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between text-xs mb-0.5">
+                            <span className="font-medium truncate">{cat.label}</span>
+                            <span className="text-muted-foreground">${cat.total.toFixed(0)}/mo</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percentage}%` }}
+                              className={cn("h-full rounded-full", cat.bgColor.replace('/10', ''))}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground w-8 text-right">{percentage.toFixed(0)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 pt-3 border-t border-border flex justify-between text-xs">
+                  <span className="text-muted-foreground">Yearly projection</span>
+                  <span className="font-bold">${getYearlyTotal().toFixed(0)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Subscription Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-base">Edit Subscription</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={updateSubscription} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Service Name</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="h-9 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Amount ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Billing Cycle</Label>
+                <Select value={editFrequency} onValueChange={(v) => setEditFrequency(v as 'monthly' | 'weekly' | 'yearly')}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Category</Label>
+              <Select value={editCategory} onValueChange={(v) => setEditCategory(v as SubscriptionCategory)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <SelectItem key={key} value={key}>
+                        <div className="flex items-center gap-2">
+                          <Icon className={cn("w-3.5 h-3.5", config.color)} />
+                          <span className="text-sm">{config.label}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Next Charge Date</Label>
+              <Input
+                type="date"
+                value={editNextCharge}
+                onChange={(e) => setEditNextCharge(e.target.value)}
+                className="h-9 text-sm"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="flex-1 h-9 text-sm" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1 h-9 text-sm">Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Convert Trial Confirmation Dialog */}
       <Dialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
@@ -588,37 +993,6 @@ export function Subscriptions() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Category Overview */}
-      {sortedCategories.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3">
-          {sortedCategories.map(cat => {
-            const config = CATEGORY_CONFIG[cat];
-            const Icon = config.icon;
-            const count = groupedSubscriptions[cat].length;
-            const total = groupedSubscriptions[cat].reduce((sum, s) => {
-              if (s.is_trial) return sum;
-              if (s.frequency === 'weekly') return sum + s.amount * 4.33;
-              if (s.frequency === 'yearly') return sum + s.amount / 12;
-              return sum + s.amount;
-            }, 0);
-            
-            return (
-              <div
-                key={cat}
-                className={cn(
-                  "flex items-center gap-1.5 px-2 py-1.5 rounded-full shrink-0",
-                  config.bgColor
-                )}
-              >
-                <Icon className={cn("w-3 h-3", config.color)} />
-                <span className="text-xs font-medium">{count}</span>
-                <span className="text-[10px] text-muted-foreground">${total.toFixed(0)}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Active Trials Section */}
       {activeTrials.length > 0 && (
@@ -754,6 +1128,19 @@ export function Subscriptions() {
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-muted-foreground mt-2">Loading...</p>
         </div>
+      ) : processedSubscriptions.length === 0 && subscriptions.length > 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center">
+            <Search className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+            <h3 className="font-semibold text-sm mb-1">No matches found</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Try adjusting your search or filters
+            </p>
+            <Button size="sm" variant="outline" onClick={() => { setSearchQuery(''); setFilterCategory('all'); }}>
+              Clear filters
+            </Button>
+          </CardContent>
+        </Card>
       ) : subscriptions.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-8 text-center">
@@ -784,18 +1171,28 @@ export function Subscriptions() {
                     {config.label} ({subs.length})
                   </h3>
                 </div>
-                {subs.map(sub => (
-                  <SubscriptionCard 
-                    key={sub.id} 
-                    sub={sub} 
-                    config={config}
-                    onDelete={deleteSubscription}
-                    onMarkUsed={markAsUsed}
-                    getDaysUntilCharge={getDaysUntilCharge}
-                    getDaysSinceUsed={getDaysSinceUsed}
-                    getTrialDaysLeft={getTrialDaysLeft}
-                  />
-                ))}
+                <AnimatePresence>
+                  {subs.map(sub => (
+                    <motion.div
+                      key={sub.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      layout
+                    >
+                      <SubscriptionCard 
+                        sub={sub} 
+                        config={config}
+                        onDelete={deleteSubscription}
+                        onMarkUsed={markAsUsed}
+                        onEdit={openEditDialog}
+                        getDaysUntilCharge={getDaysUntilCharge}
+                        getDaysSinceUsed={getDaysSinceUsed}
+                        getTrialDaysLeft={getTrialDaysLeft}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             );
           })}
@@ -810,12 +1207,13 @@ interface SubscriptionCardProps {
   config: { label: string; icon: typeof Tv; color: string; bgColor: string };
   onDelete: (id: string) => void;
   onMarkUsed: (id: string) => void;
+  onEdit: (sub: Subscription) => void;
   getDaysUntilCharge: (date: string) => number;
   getDaysSinceUsed: (date: string | null) => number | null;
   getTrialDaysLeft: (sub: Subscription) => number | null;
 }
 
-function SubscriptionCard({ sub, config, onDelete, onMarkUsed, getDaysUntilCharge, getDaysSinceUsed, getTrialDaysLeft }: SubscriptionCardProps) {
+function SubscriptionCard({ sub, config, onDelete, onMarkUsed, onEdit, getDaysUntilCharge, getDaysSinceUsed, getTrialDaysLeft }: SubscriptionCardProps) {
   const Icon = config.icon;
   const daysUntil = getDaysUntilCharge(sub.next_charge_date);
   const daysSinceUsed = getDaysSinceUsed(sub.last_used_date);
@@ -890,14 +1288,25 @@ function SubscriptionCard({ sub, config, onDelete, onMarkUsed, getDaysUntilCharg
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-primary"
                 onClick={() => onMarkUsed(sub.id)}
+                title="Mark as used"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-blue-500"
+                onClick={() => onEdit(sub)}
+                title="Edit subscription"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 onClick={() => onDelete(sub.id)}
+                title="Delete subscription"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
