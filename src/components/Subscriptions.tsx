@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi, Timer, Bell, Search, ArrowUpDown, Edit2, X, PieChart } from 'lucide-react';
+import { Plus, AlertTriangle, Calendar, Trash2, CheckCircle2, Clock, Zap, Wrench, Tv, Music, Gamepad2, Newspaper, Dumbbell, Sparkles, Lightbulb, MoreHorizontal, Wifi, Timer, Bell, Search, ArrowUpDown, Edit2, X, PieChart, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SubscriptionCalendar } from './SubscriptionCalendar';
 
 type SubscriptionCategory = 'tools' | 'entertainment' | 'productivity' | 'lifestyle' | 'utilities' | 'gaming' | 'music' | 'news' | 'fitness' | 'other';
 
@@ -135,6 +136,7 @@ export function Subscriptions() {
   const [filterCategory, setFilterCategory] = useState<SubscriptionCategory | 'all'>('all');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   
   // Form state
   const [name, setName] = useState('');
@@ -558,8 +560,18 @@ export function Subscriptions() {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0"
+            className={cn("h-8 w-8 p-0", showCalendar && "bg-primary text-primary-foreground")}
+            onClick={() => setShowCalendar(!showCalendar)}
+            title="Calendar view"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("h-8 w-8 p-0", showAnalytics && "bg-primary text-primary-foreground")}
             onClick={() => setShowAnalytics(!showAnalytics)}
+            title="Analytics"
           >
             <PieChart className="w-3.5 h-3.5" />
           </Button>
@@ -770,6 +782,22 @@ export function Subscriptions() {
           );
         })}
       </div>
+
+      {/* Calendar View */}
+      <AnimatePresence>
+        {showCalendar && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <SubscriptionCalendar 
+              subscriptions={subscriptions}
+              categoryConfig={CATEGORY_CONFIG}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Analytics Panel */}
       <AnimatePresence>

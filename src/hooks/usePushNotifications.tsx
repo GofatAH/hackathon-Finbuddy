@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { detectBrowserSupport, getPushSupportMessage, type BrowserSupport } from '@/lib/browser-support';
 
-// You'll need to set this to your VAPID public key
+// VAPID public key from environment
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
@@ -25,6 +26,8 @@ export interface PushDebugInfo {
   swRegistered: boolean;
   swState: string;
   vapidConfigured: boolean;
+  browserSupport: BrowserSupport | null;
+  supportMessage: string;
 }
 
 export function usePushNotifications() {
@@ -39,6 +42,9 @@ export function usePushNotifications() {
   // Check if push notifications are supported and register service worker
   useEffect(() => {
     const checkSupport = async () => {
+      const browserSupport = detectBrowserSupport();
+      const supportMessage = getPushSupportMessage(browserSupport);
+      
       const debug: PushDebugInfo = {
         isSecureContext: window.isSecureContext,
         hasServiceWorker: 'serviceWorker' in navigator,
@@ -46,10 +52,29 @@ export function usePushNotifications() {
         hasNotification: 'Notification' in window,
         swRegistered: false,
         swState: 'not-registered',
-        vapidConfigured: !!VAPID_PUBLIC_KEY
+        vapidConfigured: !!VAPID_PUBLIC_KEY,
+        browserSupport,
+        supportMessage
       };
 
       console.log('[Push] Checking support:', debug);
+      console.log('[Push] Browser support:', browserSupport);
+
+      // Check browser support level
+      if (browserSupport.pushNotifications === 'none') {
+        console.warn('[Push] Push not supported:', supportMessage);
+        setDebugInfo(debug);
+        setIsSupported(false);
+        return;
+      }
+
+      // For PWA-only support, check if we're installed
+      if (browserSupport.pushNotifications === 'pwa-only' && !browserSupport.isStandalone) {
+        console.warn('[Push] PWA installation required for push');
+        setDebugInfo(debug);
+        setIsSupported(false);
+        return;
+      }
 
       // Must be secure context (HTTPS or localhost)
       if (!window.isSecureContext) {
@@ -74,27 +99,32 @@ export function usePushNotifications() {
 
       try {
         // Check if there's already a service worker registered
-        const existingReg = await navigator.serviceWorker.getRegistration('/sw.js');
+        // Try the PWA service worker first, then fall back to our custom one
+        let registration = await navigator.serviceWorker.getRegistration('/');
         
-        if (existingReg) {
-          console.log('[Push] Existing service worker found:', existingReg.active?.state);
+        if (!registration) {
+          registration = await navigator.serviceWorker.getRegistration('/sw.js');
+        }
+        
+        if (registration) {
+          console.log('[Push] Existing service worker found:', registration.active?.state);
           debug.swRegistered = true;
-          debug.swState = existingReg.active?.state || 'waiting';
+          debug.swState = registration.active?.state || 'waiting';
         } else {
           // Register our custom service worker for push
           console.log('[Push] Registering service worker...');
-          const registration = await navigator.serviceWorker.register('/sw.js', {
+          const newRegistration = await navigator.serviceWorker.register('/sw.js', {
             scope: '/'
           });
           
-          console.log('[Push] Service worker registered:', registration.scope);
+          console.log('[Push] Service worker registered:', newRegistration.scope);
           debug.swRegistered = true;
-          debug.swState = registration.active?.state || 'installing';
-
-          // Wait for the service worker to be ready
-          await navigator.serviceWorker.ready;
-          console.log('[Push] Service worker is ready');
+          debug.swState = newRegistration.active?.state || 'installing';
         }
+
+        // Wait for the service worker to be ready
+        await navigator.serviceWorker.ready;
+        console.log('[Push] Service worker is ready');
 
         setDebugInfo(debug);
         setIsSupported(true);
