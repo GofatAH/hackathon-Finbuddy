@@ -9,12 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { personalities, PersonalityType } from '@/lib/personalities';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Bell, BellOff, Loader2, Moon, Sun, LogOut, Shield, User, Palette, Sparkles, Pencil, X, Save, Camera, Trash2 } from 'lucide-react';
+import { Check, Bell, BellOff, Loader2, Moon, Sun, LogOut, Shield, User, Palette, Sparkles, Pencil, X, Save, Camera, Trash2, Download, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { detectBrowserSupport } from '@/lib/browser-support';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -42,8 +43,12 @@ export function Settings() {
     permission, 
     loading: pushLoading, 
     subscribe, 
-    unsubscribe 
+    unsubscribe,
+    debugInfo
   } = usePushNotifications();
+
+  // Get browser support info
+  const browserSupport = detectBrowserSupport();
 
   // Edit profile state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -520,9 +525,61 @@ export function Settings() {
                 )}
               </>
             ) : (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                <BellOff className="w-4 h-4 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">Not supported in this browser</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/50">
+                  <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground">Not Available</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {debugInfo?.supportMessage || 'Push notifications are not supported'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Show install prompt for iOS Safari */}
+                {browserSupport.isIOS && browserSupport.isSafari && !browserSupport.isStandalone && (
+                  <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex items-start gap-2">
+                      <Smartphone className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-primary">Install FinBuddy</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Tap the Share button, then "Add to Home Screen" to enable push notifications on iOS.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show privacy browser message */}
+                {browserSupport.isPrivacyBrowser && (
+                  <div className="p-2.5 rounded-lg bg-muted border border-border">
+                    <div className="flex items-start gap-2">
+                      <Shield className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium">Privacy Browser Detected</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Your browser blocks push notifications for privacy. Try Chrome or Safari for full features.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show Android install prompt */}
+                {browserSupport.isAndroid && !browserSupport.isStandalone && (
+                  <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex items-start gap-2">
+                      <Download className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-primary">Install App</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Install FinBuddy from the browser menu for the best experience.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
