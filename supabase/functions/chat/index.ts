@@ -101,16 +101,21 @@ IMPORTANT OUTPUT FORMAT:
 [EXPENSE_DATA:{"amount":NUMBER,"category":"needs|wants|savings","merchant":"MERCHANT_NAME"}]
 
 - For RECURRING SUBSCRIPTIONS (not trials), include at the end:
-[SUBSCRIPTION_DATA:{"name":"SERVICE_NAME","amount":NUMBER,"frequency":"monthly|weekly|yearly","category":"tools|entertainment|music|gaming|productivity|fitness|lifestyle|utilities|news|other","is_trial":false}]
+[SUBSCRIPTION_DATA:{"name":"SERVICE_NAME","amount":NUMBER,"frequency":"monthly|weekly|yearly","category":"tools|entertainment|music|gaming|productivity|fitness|lifestyle|utilities|news|other","is_trial":false,"start_date":"YYYY-MM-DD or null"}]
+  - start_date: Extract from user message if they mention WHEN they subscribed (e.g., "subscribed on the 5th", "started last Monday", "began on January 10th"). Use ISO format YYYY-MM-DD. If no date mentioned, use null.
+  - IMPORTANT: If user says "on the 5th" or "on the 15th" without specifying month, assume CURRENT month. Calculate the actual date.
+  - Examples: "subscribed on the 5th" → use current month's 5th day. "started 3 days ago" → calculate that date.
 
 - For FREE TRIALS, include at the end:
-[SUBSCRIPTION_DATA:{"name":"SERVICE_NAME","amount":NUMBER,"frequency":"monthly|weekly|yearly","category":"tools|entertainment|music|gaming|productivity|fitness|lifestyle|utilities|news|other","is_trial":true,"trial_days":NUMBER}]
+[SUBSCRIPTION_DATA:{"name":"SERVICE_NAME","amount":NUMBER,"frequency":"monthly|weekly|yearly","category":"tools|entertainment|music|gaming|productivity|fitness|lifestyle|utilities|news|other","is_trial":true,"trial_days":NUMBER,"start_date":"YYYY-MM-DD or null"}]
   - trial_days should be the number of days in the trial (7, 14, 30, etc.)
   - amount should be what it will cost AFTER the trial ends
+  - start_date: When the trial started (if mentioned), otherwise null
   - ALWAYS warn the user about when the trial ends and set a reminder
 
 Look for keywords like "subscription", "monthly", "every month", "yearly", "annually", "recurring", "membership" to identify subscriptions.
 Look for keywords like "free trial", "trial", "trying", "trial period", "free for" to identify trials.
+Look for date indicators like "on the Xth", "started on", "subscribed on", "since", "from", "began", "X days ago", "last week", "last month" to extract start_date.
 
 For trials, always:
 1. Acknowledge it's a trial
