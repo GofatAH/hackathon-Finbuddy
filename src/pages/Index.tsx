@@ -343,7 +343,7 @@ export default function Index() {
       const decoder = new TextDecoder();
       let assistantContent = '';
       let expenseData: { amount: number; category: 'needs' | 'wants' | 'savings'; merchant?: string } | null = null;
-      let subscriptionData: { name: string; amount: number; frequency: 'monthly' | 'weekly' | 'yearly'; category: 'tools' | 'entertainment' | 'music' | 'gaming' | 'productivity' | 'fitness' | 'lifestyle' | 'utilities' | 'news' | 'other'; is_trial?: boolean; trial_days?: number } | null = null;
+      let subscriptionData: { name: string; amount: number; frequency: 'monthly' | 'weekly' | 'yearly'; category: 'tools' | 'entertainment' | 'music' | 'gaming' | 'productivity' | 'fitness' | 'lifestyle' | 'utilities' | 'news' | 'other'; is_trial?: boolean; trial_days?: number; start_date?: string | null } | null = null;
 
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: '' }]);
 
@@ -480,23 +480,41 @@ export default function Index() {
 
       // If subscription was parsed, add it to the database
       if (subscriptionData) {
-        const nextChargeDate = new Date();
+        // Use start_date from AI if provided, otherwise use today
+        let baseDate = new Date();
+        if (subscriptionData.start_date) {
+          const parsedStartDate = new Date(subscriptionData.start_date);
+          if (!isNaN(parsedStartDate.getTime())) {
+            baseDate = parsedStartDate;
+          }
+        }
+        
+        const nextChargeDate = new Date(baseDate);
         let trialEndDate: Date | null = null;
         
         // Handle free trials
         if (subscriptionData.is_trial && subscriptionData.trial_days) {
-          trialEndDate = new Date();
+          trialEndDate = new Date(baseDate);
           trialEndDate.setDate(trialEndDate.getDate() + subscriptionData.trial_days);
           // For trials, next charge is after trial ends
           nextChargeDate.setDate(nextChargeDate.getDate() + subscriptionData.trial_days);
         } else {
-          // Regular subscription - next charge based on frequency
+          // Regular subscription - calculate next charge based on frequency from start date
           if (subscriptionData.frequency === 'monthly') {
-            nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
+            // Add months until we're in the future
+            while (nextChargeDate <= new Date()) {
+              nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
+            }
           } else if (subscriptionData.frequency === 'weekly') {
-            nextChargeDate.setDate(nextChargeDate.getDate() + 7);
+            // Add weeks until we're in the future
+            while (nextChargeDate <= new Date()) {
+              nextChargeDate.setDate(nextChargeDate.getDate() + 7);
+            }
           } else if (subscriptionData.frequency === 'yearly') {
-            nextChargeDate.setFullYear(nextChargeDate.getFullYear() + 1);
+            // Add years until we're in the future
+            while (nextChargeDate <= new Date()) {
+              nextChargeDate.setFullYear(nextChargeDate.getFullYear() + 1);
+            }
           }
         }
         
